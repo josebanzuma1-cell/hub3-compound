@@ -124,11 +124,15 @@ export function lineChart(host: HTMLElement, opts: LineChartOpts): void {
     `<text x="${X(t.at).toFixed(1)}" y="${H - 8}" text-anchor="middle">${esc(t.label)}</text>`
   ).join('');
 
+  // Area fills sit on the axis floor. On a log axis that floor is a positive
+  // number, not zero, so it is computed once here rather than inline twice.
+  const baseY = Y(opts.logScale ? lo : Math.max(lo, 0)).toFixed(1);
+
   const paths = series.map((s) => {
     const pts = s.points.map((v, i) => [X(i), Y(v)] as [number, number]);
     const d = path(pts);
     const area = s.fill
-      ? `<path d="${d}L${X(s.points.length - 1).toFixed(1)} ${Y(opts.logScale ? lo : Math.max(lo, 0)).toFixed(1)}L${X(0).toFixed(1)} ${Y(Math.max(lo, 0)).toFixed(1)}Z" fill="${s.color}" opacity=".10" stroke="none"/>`
+      ? `<path d="${d}L${X(s.points.length - 1).toFixed(1)} ${baseY}L${X(0).toFixed(1)} ${baseY}Z" fill="${s.color}" opacity=".10" stroke="none"/>`
       : '';
     return `${area}<path d="${d}" stroke="${s.color}"${s.dashed ? ' stroke-dasharray="5 4"' : ''}/>`;
   }).join('');

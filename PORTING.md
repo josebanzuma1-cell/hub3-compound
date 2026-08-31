@@ -179,22 +179,18 @@ diff -r src/kit ../hub-01-mortgage/src/kit --exclude=tokens.css
 
 If that prints anything, a fix landed in one hub and not the other — port it
 before the two drift further.
-## Outstanding backport
+## Chart: log scale
 
-`src/kit/calc/chart.ts` gained an optional `logScale` flag in Hub 3. It is
-purely additive — existing callers are unaffected — but until it is copied
-back, Hub 1 and Hub 2 have an older chart module.
+`lineChart` takes an optional `logScale`. Use it when series span orders of
+magnitude — a Monte Carlo percentile fan is the obvious case: the 90th
+percentile reached $12M while the median ended near $800k, and on a linear
+axis the two lines that mattered were flat against the bottom.
 
-It exists because a Monte Carlo percentile fan spans orders of magnitude: the
-90th percentile reached $12M while the median ended near $800k, and on a linear
-axis the two lines that matter were flat against the bottom. Any hub plotting a
-range of compounding outcomes will want it.
+Ticks sit on powers of ten; the axis ends at the real maximum rather than
+rounding up a decade. Values at or below zero are floored, so a depleted
+portfolio renders instead of producing `log10(0)`.
 
-```bash
-cp src/kit/calc/chart.ts ../hub-01-mortgage/src/kit/calc/chart.ts
-cp src/kit/calc/chart.ts ../hub-02-tax/src/kit/calc/chart.ts
-```
-
+Backported to hubs 1 and 2 — all three kits carry it.
 ## A third calculator layout
 
 Hub 3 does not use `ToolShell`. It has `src/components/ToolCockpit.astro`:
@@ -206,3 +202,13 @@ That makes three layouts across three hubs — side-by-side (1), side-by-side on
 a light split page (2), and cockpit (3). Pick per hub based on what the tool
 actually needs to show, not for variety's sake; but do not default to copying
 the last one either.
+
+## Known divergence
+
+Hub 1 still keeps `surfaces.css` and `Logo.astro` inside `src/kit/`. Hubs 2 and
+3 moved them out, because layout and mark are per-hub by definition. Everything
+else in the kit is byte-identical across all three (`tokens.css` values aside).
+
+Aligning Hub 1 means moving two files and updating two imports in
+`BaseLayout.astro`. Worth doing next time that workspace is open; it changes no
+behaviour.
