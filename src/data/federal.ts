@@ -1,16 +1,30 @@
-/* Federal tax parameters.
-
-   SEEDED AND UNVERIFIED. Tax figures are indexed annually and this hub is the
-   one where being wrong costs a visitor real money on a real filing. Every
-   number here must be checked against IRS Rev. Proc. for the tax year before
-   launch, and re-checked every November when the next year's figures publish.
-
-   Sources to verify against:
-   - Brackets and standard deduction: IRS Revenue Procedure (annual)
-   - Social Security wage base: SSA annual announcement
-   - Medicare and Additional Medicare: IRS Publication 15 */
+/* Federal tax parameters — TAX YEAR 2026.
+ *
+ * VERIFIED against primary sources. Every figure below carries a provenance
+ * record naming the document it came from and the date it was checked.
+ *
+ * Sources:
+ *   Rev. Proc. 2025-32 (Internal Revenue Bulletin 2025-45)
+ *     — rate schedules, standard deduction, capital gains rate amounts,
+ *       child tax credit
+ *   IRS Topic 751 — Social Security and Medicare withholding rates
+ *   SSA Contribution and Benefit Base — 2026 wage base
+ *   IRC §1411 / §3101(b)(2) — NIIT and Additional Medicare thresholds
+ *     (statutory, NOT inflation-indexed, unchanged since 2013)
+ *   IRC §121 — residence gain exclusion (statutory, not indexed)
+ *
+ * RE-CHECK EVERY NOVEMBER, when the following year's Revenue Procedure
+ * publishes. The build gate fails rows checked more than 400 days ago. */
 
 export type FilingStatus = 'single' | 'married' | 'head';
+
+/** Evidence that a value was checked, rather than merely believed. */
+export interface Provenance {
+  checkedOn: string;
+  source: string;
+  by: string;
+}
+export type Verified = Provenance | false;
 
 export interface Bracket {
   /** upper bound of this bracket; null = no ceiling */
@@ -35,57 +49,65 @@ export interface FederalYear {
     additionalMedicareRate: number;
     additionalMedicareThreshold: Record<FilingStatus, number>;
   };
-  verified: boolean;
+  verified: Verified;
   source: string;
 }
 
+const REV_PROC = 'IRS Rev. Proc. 2025-32 (IRB 2025-45), tax year 2026';
+const CHECKED = '2026-08-31';
+
 export const FEDERAL: FederalYear = {
-  year: 2025,
+  year: 2026,
   single: {
-    standardDeduction: 15_000,
+    standardDeduction: 16_100,
     brackets: [
-      { upTo: 11_925, rate: 10 },
-      { upTo: 48_475, rate: 12 },
-      { upTo: 103_350, rate: 22 },
-      { upTo: 197_300, rate: 24 },
-      { upTo: 250_525, rate: 32 },
-      { upTo: 626_350, rate: 35 },
+      { upTo: 12_400, rate: 10 },
+      { upTo: 50_400, rate: 12 },
+      { upTo: 105_700, rate: 22 },
+      { upTo: 201_775, rate: 24 },
+      { upTo: 256_225, rate: 32 },
+      { upTo: 640_600, rate: 35 },
       { upTo: null, rate: 37 },
     ],
   },
   married: {
-    standardDeduction: 30_000,
+    standardDeduction: 32_200,
     brackets: [
-      { upTo: 23_850, rate: 10 },
-      { upTo: 96_950, rate: 12 },
-      { upTo: 206_700, rate: 22 },
-      { upTo: 394_600, rate: 24 },
-      { upTo: 501_050, rate: 32 },
-      { upTo: 751_600, rate: 35 },
+      { upTo: 24_800, rate: 10 },
+      { upTo: 100_800, rate: 12 },
+      { upTo: 211_400, rate: 22 },
+      { upTo: 403_550, rate: 24 },
+      { upTo: 512_450, rate: 32 },
+      { upTo: 768_700, rate: 35 },
       { upTo: null, rate: 37 },
     ],
   },
   head: {
-    standardDeduction: 22_500,
+    standardDeduction: 24_150,
     brackets: [
-      { upTo: 17_000, rate: 10 },
-      { upTo: 64_850, rate: 12 },
-      { upTo: 103_350, rate: 22 },
-      { upTo: 197_300, rate: 24 },
-      { upTo: 250_500, rate: 32 },
-      { upTo: 626_350, rate: 35 },
+      { upTo: 17_700, rate: 10 },
+      { upTo: 67_450, rate: 12 },
+      { upTo: 105_700, rate: 22 },
+      { upTo: 201_750, rate: 24 },
+      { upTo: 256_200, rate: 32 },
+      { upTo: 640_600, rate: 35 },
       { upTo: null, rate: 37 },
     ],
   },
   fica: {
     socialSecurityRate: 6.2,
-    socialSecurityWageBase: 176_100,
+    socialSecurityWageBase: 184_500,
     medicareRate: 1.45,
     additionalMedicareRate: 0.9,
+    // Statutory under §3101(b)(2) and never indexed — the same figures since 2013.
     additionalMedicareThreshold: { single: 200_000, married: 250_000, head: 200_000 },
   },
-  verified: false,
-  source: 'seeded estimate for tax year 2025 — unverified against IRS Rev. Proc.',
+  verified: {
+    checkedOn: CHECKED,
+    source: `${REV_PROC}; IRS Topic 751; SSA Contribution and Benefit Base 2026`,
+    by: 'BAMU',
+  },
+  source: REV_PROC,
 };
 
 /** Progressive tax on an amount, given a bracket table. */
@@ -115,33 +137,38 @@ export function marginalRate(taxable: number, brackets: Bracket[]): number {
   return brackets[brackets.length - 1].rate;
 }
 
-/* Long-term capital gains brackets. A separate rate schedule from ordinary
-   income, applied to taxable income *including* the gain — which is why a
-   large sale can push part of itself from 0% into 15%.
+/* Long-term capital gains. A separate rate schedule from ordinary income,
+   applied to taxable income INCLUDING the gain — which is why a large sale can
+   push part of itself from 0% into 15%.
 
-   SEEDED AND UNVERIFIED, like everything else here. */
+   The bracket ceilings below are the "Maximum Zero Rate Amount" and "Maximum
+   15-Percent Rate Amount" published in Rev. Proc. 2025-32. */
 export interface CapGainsYear {
   brackets: Record<FilingStatus, Bracket[]>;
-  /** Net Investment Income Tax: 3.8% above these MAGI thresholds */
   niitRate: number;
   niitThreshold: Record<FilingStatus, number>;
-  /** primary residence gain exclusion under IRC §121 */
   homeSaleExclusion: Record<FilingStatus, number>;
-  verified: boolean;
+  verified: Verified;
   source: string;
 }
 
 export const CAP_GAINS: CapGainsYear = {
   brackets: {
-    single:  [{ upTo: 48_350, rate: 0 }, { upTo: 533_400, rate: 15 }, { upTo: null, rate: 20 }],
-    married: [{ upTo: 96_700, rate: 0 }, { upTo: 600_050, rate: 15 }, { upTo: null, rate: 20 }],
-    head:    [{ upTo: 64_750, rate: 0 }, { upTo: 566_700, rate: 15 }, { upTo: null, rate: 20 }],
+    single:  [{ upTo: 49_450, rate: 0 }, { upTo: 545_500, rate: 15 }, { upTo: null, rate: 20 }],
+    married: [{ upTo: 98_900, rate: 0 }, { upTo: 613_700, rate: 15 }, { upTo: null, rate: 20 }],
+    head:    [{ upTo: 66_200, rate: 0 }, { upTo: 579_600, rate: 15 }, { upTo: null, rate: 20 }],
   },
   niitRate: 3.8,
+  // §1411, statutory and never indexed — which is why more filers pay it each year.
   niitThreshold: { single: 200_000, married: 250_000, head: 200_000 },
+  // §121, statutory and never indexed since 1997.
   homeSaleExclusion: { single: 250_000, married: 500_000, head: 250_000 },
-  verified: false,
-  source: 'seeded estimate for tax year 2025 — unverified',
+  verified: {
+    checkedOn: CHECKED,
+    source: `${REV_PROC} (capital gains rate amounts); IRC §1411 and §121 for the unindexed thresholds`,
+    by: 'BAMU',
+  },
+  source: REV_PROC,
 };
 
 /** Rate that applies to the marginal dollar of long-term gain. */

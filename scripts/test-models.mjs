@@ -71,7 +71,7 @@ chk('401k: front-loading forfeits match', front.matchForfeited > 0 ? 1 : 0, 1, 0
 const fixed = m401({ ...mb, pct: 60, trueup: true });
 chk('401k: true-up restores it', fixed.matchForfeited, 0, 0.001);
 chk('401k: true-up pays the even-spread match', fixed.matchEarned, fixed.matchIfSpreadEvenly, 0.5);
-chk('401k: contributions never exceed the limit', front.yourContribution <= 23500.5 ? 1 : 0, 1, 0);
+chk('401k: contributions never exceed the limit', front.yourContribution <= 24500.5 ? 1 : 0, 1, 0);
 
 chk('401k: 2 of 3 years is 67% vested', m401({ ...mb, vest: 3, years: 2 }).vestedPct, 66.67, 0.1);
 chk('401k: past the schedule is fully vested', m401({ ...mb, vest: 3, years: 5 }).vestedPct, 100);
@@ -112,8 +112,13 @@ chk('roth: higher ceiling gives more headroom', hi.headroomPerYear > L1.headroom
 // sooner, so fewer years of growth get converted. What it does is clear the
 // account, which the 12% ladder fails to do inside ten years.
 chk('roth: higher ceiling finishes the balance', hi.fullyConverted ? 1 : 0, 1, 0);
-chk('roth: the 12% ladder does not finish in ten years', L1.fullyConverted ? 1 : 0, 0, 0);
-chk('roth: leftover is reported', L1.leftUnconverted > 0 ? 1 : 0, 1, 0);
+// Whether a ladder finishes depends on the bracket widths of the tax year, so
+// assert the mechanism rather than an outcome that moves with the data: a
+// balance large enough to outrun the annual headroom must report a remainder.
+const big = roth({ ...rb, bal: 1_600_000 });
+chk('roth: a balance beyond the headroom does not finish', big.fullyConverted ? 1 : 0, 0, 0);
+chk('roth: leftover is reported when it exists', big.leftUnconverted > 0 ? 1 : 0, 1, 0);
+chk('roth: a balance within reach does finish', L1.fullyConverted ? 1 : 0, 1, 0);
 chk('roth: higher ceiling costs a higher effective rate', hi.effectiveRate > L1.effectiveRate ? 1 : 0, 1, 0);
 
 // Other income eats the headroom.
@@ -168,5 +173,17 @@ const calm = ld({ ...lb, vol: 0 });
 chk('dca: zero volatility gives a certain winner', calm.lumpWinRate === 100 || calm.lumpWinRate === 0 ? 1 : 0, 1, 0);
 chk('dca: zero amount is safe', ld({ ...lb, amount: 0 }).lumpMedian, 0);
 
-console.log(`\n${pass} passed, ${fail} failed`);
+// ============ data pinning ============
+// Asserts the published figures rather than the arithmetic. SHOULD fail when
+// the tax year rolls over — that is the prompt to re-read the source.
+import { CAP_GAINS } from '../src/data/federal.ts';
+chk('data: tax year', FEDERAL.year, 2026, 0);
+chk('data: married standard deduction', FEDERAL.married.standardDeduction, 32_200, 0);
+chk('data: top of 12% bracket, married', FEDERAL.married.brackets[1].upTo, 100_800, 0);
+chk('data: federal carries provenance', FEDERAL.verified && FEDERAL.verified.source ? 1 : 0, 1, 0);
+chk('data: capital gains carries provenance', CAP_GAINS.verified && CAP_GAINS.verified.source ? 1 : 0, 1, 0);
+
+
+console.log(`
+${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

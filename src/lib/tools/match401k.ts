@@ -8,6 +8,10 @@
       remaining period. Employers with a "true-up" repair this after year end.
       Many do not, and the forfeited match is invisible unless you look.
 
+   The deferral limit default is the 2026 figure (IRS IR-2025-111). It is an
+   input rather than fixed data, but a stale default quietly misleads anyone
+   who does not change it.
+
    2. VESTING. Match is not yours until it vests. Leaving before a cliff
       forfeits all of it; leaving mid-schedule forfeits part. */
 import type { FieldSpec, Values } from '@kit/calc/url-state';
@@ -20,7 +24,7 @@ export const FIELDS: FieldSpec[] = [
   { key: 'm1cap',  type: 'number', default: 3,      min: 0, max: 50,         dp: 2 },
   { key: 'm2pct',  type: 'number', default: 50,     min: 0, max: 200,        dp: 1 },
   { key: 'm2cap',  type: 'number', default: 2,      min: 0, max: 50,         dp: 2 },
-  { key: 'limit',  type: 'number', default: 23_500, min: 1_000, max: 100_000, dp: 0 },
+  { key: 'limit',  type: 'number', default: 24_500, min: 1_000, max: 100_000, dp: 0 },
   { key: 'trueup', type: 'bool',   default: false },
   { key: 'vest',   type: 'number', default: 3,      min: 0, max: 10,         dp: 0 },
   { key: 'years',  type: 'number', default: 2,      min: 0, max: 50,         dp: 1 },
