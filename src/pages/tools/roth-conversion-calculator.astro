@@ -1,0 +1,316 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ToolCockpit from '../../components/ToolCockpit.astro';
+import Field from '@kit/components/Field.astro';
+import SelectField from '@kit/components/SelectField.astro';
+import Segmented from '@kit/components/Segmented.astro';
+import Chart from '@kit/components/Chart.astro';
+import DataNote from '@kit/components/DataNote.astro';
+import RelatedTools from '@kit/components/RelatedTools.astro';
+import { SITE, toolBySlug, toolsExcept } from '../../lib/site';
+import { D } from '../../lib/tools/roth-ladder';
+import { FEDERAL } from '@data/federal';
+
+const tool = toolBySlug('roth-conversion-calculator')!;
+const canonical = `/tools/${tool.slug}`;
+const title = `Roth Conversion Ladder Calculator | ${SITE.name}`;
+const description =
+  'Work out how much to convert each year to move a traditional balance to ' +
+  'Roth at the lowest total tax, and what converting it all at once would cost.';
+const schema = [{
+  '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: SITE.url },
+    { '@type': 'ListItem', position: 2, name: 'Calculators', item: `${SITE.url}/tools` },
+    { '@type': 'ListItem', position: 3, name: tool.nav, item: `${SITE.url}${canonical}` },
+  ],
+}];
+const related = toolsExcept(tool.slug).map((t) => ({
+  href: `/tools/${t.slug}`, title: t.title, desc: t.blurb,
+}));
+---
+<BaseLayout {title} {description} {canonical} {schema}>
+  <ToolCockpit
+    title="Roth Conversion Ladder"
+    intro="A traditional balance gets taxed on the way out. In low-income years you can choose when that happens — moving it across a slice at a time, filling the cheap brackets and stopping before the expensive ones."
+    breadcrumbs={[{ href: '/', label: 'Home' }, { href: '/tools', label: 'Calculators' }, { label: tool.nav }]}
+    calcId="roth"
+    railTitle="Your position"
+  >
+    <div slot="value">
+      <div class="cockpit__label">Tax saved by laddering</div>
+      <div class="cockpit__value num" data-out="savingVsAllAtOnce" data-fmt="currency">—</div>
+      <div class="cockpit__sub">
+        Against converting the whole balance in a single year, which would cost
+        <span data-out="allAtOnceTax" data-fmt="currency">—</span> at an effective
+        <span data-out="allAtOnceRate" data-fmt="percent1">—</span>.
+      </div>
+    </div>
+
+    <div slot="chart">
+      <Chart id="chart-roth" height={250}
+             caption="Traditional balance falling as the Roth balance builds. Both keep growing between conversions." />
+    </div>
+
+    <div slot="stats">
+      <div class="cstat">
+        <div class="cstat__label">Convert each year</div>
+        <div class="cstat__value num cstat__value--gold" data-out="headroomPerYear" data-fmt="currency">—</div>
+        <div class="cstat__note">to fill the <span data-out="ceilingLabel" data-fmt="percent0">—</span> bracket</div>
+      </div>
+      <div class="cstat">
+        <div class="cstat__label">Total tax on the ladder</div>
+        <div class="cstat__value num" data-out="totalTax" data-fmt="currency">—</div>
+        <div class="cstat__note"><span data-out="effectiveRate" data-fmt="percent1">—</span> effective</div>
+      </div>
+      <div class="cstat">
+        <div class="cstat__label">Moved to Roth</div>
+        <div class="cstat__value num" data-out="totalConverted" data-fmt="currency">—</div>
+        <div class="cstat__note">across the whole ladder</div>
+      </div>
+      <div class="cstat">
+        <div class="cstat__label">Still traditional</div>
+        <div class="cstat__value num" data-out="leftUnconverted" data-fmt="currency">—</div>
+        <div class="cstat__note">at the end</div>
+      </div>
+    </div>
+
+    <div slot="rail">
+      <div class="rail__grid rail__grid--4">
+        <Field name="bal" label="Traditional balance" affix="currency" value={D.bal}
+               min={0} max={50000000} step={10000}
+               slider sliderMin={0} sliderMax={3000000} sliderStep={10000} />
+        <Field name="income" label="Other taxable income" affix="currency" value={D.income}
+               hint="per year during the ladder" min={0} max={10000000} step={1000} />
+        <Segmented name="status" label="Filing status" value={D.status}
+          options={[{ value: 'single', label: 'Single' }, { value: 'married', label: 'Married' }]} />
+        <Field name="years" label="Ladder length" value={D.years} hint="years" min={1} max={40} step={1} />
+        <SelectField name="ceil" label="Fill brackets up to" value={D.ceil}
+          options={[
+            { value: 10, label: '10% bracket' },
+            { value: 12, label: '12% bracket' },
+            { value: 22, label: '22% bracket' },
+            { value: 24, label: '24% bracket' },
+            { value: 32, label: '32% bracket' },
+          ]} />
+        <Field name="growth" label="Growth rate" affix="percent" value={D.growth} hint="per year" min={-10} max={20} step={0.25} />
+        <Field name="state" label="State tax on conversions" affix="percent" value={D.state} min={0} max={15} step={0.25} />
+        <Segmented name="payfrom" label="Pay the tax from" value={D.payfrom}
+          options={[{ value: 'outside', label: 'Outside savings' }, { value: 'inside', label: 'The conversion' }]} />
+      </div>
+    </div>
+
+    <div id="roth-verdict" style="margin-top:var(--s-5)"></div>
+
+    <div class="panel-card" style="margin-top:var(--s-5)">
+      <div class="panel-card__title">Year by year</div>
+      <div class="table-wrap" style="max-height:420px;overflow-y:auto">
+        <table class="data" id="roth-table">
+          <thead><tr><th>Year</th><th>Converted</th><th>Federal tax</th><th>State</th><th>Effective</th><th>Roth</th><th>Traditional left</th></tr></thead>
+          <tbody><tr><td colspan="7" style="text-align:center;color:var(--c-ink-3)">Calculating…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="margin-top:var(--s-5)">
+      <DataNote source={`Federal brackets seeded for tax year ${FEDERAL.year}`} verified={false}
+                note="Brackets are indexed annually and a multi-year ladder spans several of them. This holds today's brackets constant across the whole period, which is a simplification — verify against current IRS figures and revisit each year." />
+    </div>
+
+    <section class="prose" style="margin-top:var(--s-7)">
+      <h2>Why timing the tax is worth so much</h2>
+      <p>
+        Money in a traditional 401(k) or IRA has never been taxed. It will be,
+        when it comes out. What you control is <em>when</em> — and therefore at
+        what rate.
+      </p>
+      <p>
+        Convert an entire balance in one year and the whole amount stacks on top
+        of itself, pushing most of it through the 22%, 24% and 32% brackets.
+        Spread the same balance across ten low-income years and much of it can
+        move at 10% and 12%. Nothing about the money changed; only the timing
+        did.
+      </p>
+      <div class="callout">
+        <strong>The window is usually early retirement.</strong> Between leaving
+        work and starting Social Security or required distributions, taxable
+        income is often unusually low. That gap is the cheapest tax space most
+        people ever get, and it closes on its own.
+      </div>
+
+      <h2>What "filling a bracket" means</h2>
+      <p>
+        Brackets are marginal. Your other income plus the standard deduction
+        determines where you start; the headroom is whatever is left before the
+        next rate begins. Converting exactly that amount uses the cheap space
+        completely and pays nothing at the higher rate.
+      </p>
+      <p>
+        Converting a dollar more is not a disaster — only that dollar is taxed
+        higher. But the whole point of a ladder is to avoid paying 22% on money
+        that could have waited a year and gone at 12%.
+      </p>
+
+      <h2>Pay the tax from outside the account</h2>
+      <p>
+        This is the single biggest lever after the bracket choice. If you use
+        savings outside the retirement account to pay the conversion tax, the
+        full converted amount lands in the Roth and compounds tax-free forever.
+        If you pay from the conversion itself, less arrives, and you have
+        effectively shrunk the account to fund the tax.
+      </p>
+      <p>
+        Under 59½ there is a second problem: money withheld from the conversion
+        to pay tax is treated as a distribution, and can attract a 10% penalty
+        on top. Toggle the control above to see what paying from inside costs.
+      </p>
+
+      <h2>The five-year rule, which is really two rules</h2>
+      <p>
+        Each conversion starts its own five-year clock before that converted
+        amount can be withdrawn penalty-free by someone under 59½. Convert in
+        2026 and that slice is available in 2031; convert again in 2027 and that
+        slice waits until 2032.
+      </p>
+      <p>
+        This is what makes it a <em>ladder</em> rather than a single conversion.
+        Early retirees convert a year's spending annually, then start drawing
+        the slice that matured five years earlier — which means the ladder has
+        to begin about five years before the money is needed, and you need
+        something else to live on in the meantime.
+      </p>
+      <p>
+        A separate five-year rule governs earnings on a Roth account, running
+        from your first Roth contribution. Both can apply at once, and the
+        interaction is genuinely confusing. After 59½ with an account older than
+        five years, neither binds.
+      </p>
+
+      <h2>The constraints that usually bind first</h2>
+      <p>
+        Brackets are rarely the real ceiling. These three commonly bite before
+        them, and none is modelled here:
+      </p>
+      <ul>
+        <li>
+          <strong>ACA premium subsidies.</strong> If you buy health insurance on
+          the marketplace, a conversion raises the income that determines your
+          subsidy. Crossing a threshold can cost thousands in lost credits — far
+          more than the bracket difference you were optimising.
+        </li>
+        <li>
+          <strong>IRMAA.</strong> Medicare Part B and D surcharges are set from
+          income two years earlier and work as cliffs, not ramps. One dollar over
+          a threshold at 63 raises premiums for a full year at 65.
+        </li>
+        <li>
+          <strong>Capital gains stacking.</strong> A conversion is ordinary
+          income and pushes long-term gains upward through the 0%, 15% and 20%
+          bands. Converting can therefore create capital gains tax on a sale that
+          would otherwise have been free.
+        </li>
+      </ul>
+
+      <h2>When not to convert</h2>
+      <ul>
+        <li><strong>You will be in a lower bracket later.</strong> If retirement income is genuinely lower than today, deferring is right and converting pays tax early for nothing.</li>
+        <li><strong>You cannot pay the tax from outside.</strong> Paying from the conversion undermines most of the benefit.</li>
+        <li><strong>You plan to leave it to charity.</strong> A charity pays no tax on a traditional balance, so converting wastes the tax entirely.</li>
+        <li><strong>You need the money within five years</strong> and are under 59½.</li>
+      </ul>
+
+      <h2>Common questions</h2>
+      <dl class="faq">
+        <dt>Can I undo a conversion?</dt>
+        <dd>
+          No. Recharacterisation of conversions was eliminated in 2018. Once
+          done it is done, which is why converting in slices — and late in the
+          year, when the year's income is actually known — is safer than one
+          large early conversion.
+        </dd>
+        <dt>Does a conversion count toward contribution limits?</dt>
+        <dd>
+          No. Conversions are unlimited and separate from the annual
+          contribution limit. You can convert any amount in any year.
+        </dd>
+        <dt>Why does the ladder convert more than I started with?</dt>
+        <dd>
+          Because the un-converted remainder keeps growing between conversions.
+          Over ten years at 5%, a ladder can move more than the opening balance
+          and still leave some behind — which the figures above show when it
+          happens.
+        </dd>
+      </dl>
+    </section>
+
+    <RelatedTools items={related} />
+  </ToolCockpit>
+</BaseLayout>
+
+<script>
+  import { mount } from '@kit/calc/engine';
+  import { lineChart } from '@kit/calc/chart';
+  import { currency, currencyCompact, percent } from '@kit/calc/format';
+  import { FIELDS, compute } from '../../lib/tools/roth-ladder';
+  import type { RothModel } from '../../lib/tools/roth-ladder';
+
+  mount<RothModel>({
+    id: 'roth',
+    fields: FIELDS,
+    compute,
+    debounceMs: 80,
+    onRender(m) {
+      const el = document.getElementById('chart-roth');
+      if (el) {
+        const years = [0, ...m.ladder.map((r) => r.year)];
+        lineChart(el, {
+          series: [
+            { name: 'Roth', color: 'var(--c-pop)', points: [0, ...m.ladder.map((r) => r.rothBalance)], fill: true },
+            { name: 'Traditional', color: 'var(--c-series-3)', points: [m.ladder[0]?.startingBalance ?? 0, ...m.ladder.map((r) => r.remaining)] },
+          ],
+          yFormat: currencyCompact,
+          xFormat: (i) => (i === 0 ? 'Start' : `Year ${years[i]}`),
+          xTicks: years.map((y, i) => ({ at: i, label: i === 0 ? '0' : String(y) }))
+            .filter((_, i) => i % Math.max(1, Math.ceil(years.length / 8)) === 0),
+          crosshair: true,
+          height: 250,
+        });
+      }
+
+      const body = document.querySelector('#roth-table tbody');
+      if (body) {
+        body.innerHTML = m.ladder.map((r) => `<tr>
+          <td>${r.year}</td>
+          <td>${currency(r.converted)}</td>
+          <td>${currency(r.federalTax)}</td>
+          <td>${currency(r.stateTax)}</td>
+          <td>${percent(r.effectiveOnConversion, 1)}</td>
+          <td>${currency(r.rothBalance)}</td>
+          <td>${currency(r.remaining)}</td>
+        </tr>`).join('');
+      }
+
+      const verdict = document.getElementById('roth-verdict');
+      if (!verdict) return;
+      const items: string[] = [];
+      let warn = false;
+
+      if (m.headroomPerYear <= 0) {
+        warn = true;
+        items.push(`<li><strong>There is no headroom at this bracket.</strong> Your other income already fills the ${m.ceilingLabel}% bracket, so nothing can be converted without going higher. Either raise the ceiling or wait for a lower-income year.</li>`);
+      } else {
+        items.push(`<li><strong>Convert ${currency(m.headroomPerYear)} a year</strong> to fill the ${m.ceilingLabel}% bracket exactly. The ladder moves ${currency(m.totalConverted)} in total at an effective ${m.effectiveRate.toFixed(1)}%, against ${m.allAtOnceRate.toFixed(1)}% if you converted everything at once.</li>`);
+      }
+
+      if (!m.fullyConverted && m.leftUnconverted > 0) {
+        items.push(`<li><strong>${currency(m.leftUnconverted)} is still traditional after ${m.ladder.length} years.</strong> Growth on the remainder is outrunning the annual headroom${m.yearsNeededToFinish ? `; finishing would take about ${m.yearsNeededToFinish} years at this rate` : ', and at this rate it never finishes'}. Either extend the ladder, or accept a higher bracket to clear it faster.</li>`);
+      } else if (m.fullyConverted) {
+        items.push(`<li><strong>The balance is fully converted inside ${m.ladder.length} years.</strong> Anything beyond that point has nothing left to move.</li>`);
+      }
+
+      items.push(`<li><strong>Bracket space is rarely the real constraint.</strong> ACA premium subsidies, IRMAA surcharges from age 63, and long-term gains stacking all bite before the brackets do, and none is modelled here. Check them before committing to an amount.</li>`);
+
+      verdict.innerHTML = `<div class="note${warn ? ' note--warn' : ''}"><strong class="note__title">Reading this ladder</strong><ul style="margin:0;padding-left:1.1rem">${items.join('')}</ul></div>`;
+    },
+  });
+</script>

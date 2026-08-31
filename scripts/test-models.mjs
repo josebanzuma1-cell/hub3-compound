@@ -82,5 +82,91 @@ chk('401k: match is a 40% return at 10% contribution', k.effectiveReturn, 40, 0.
 chk('401k: zero contribution earns zero match', m401({ ...mb, pct: 0 }).matchEarned, 0);
 chk('401k: zero salary is safe', m401({ ...mb, salary: 0 }).totalIntoAccount, 0);
 
+// ============ Tool 15: Roth conversion ladder ============
+import { compute as roth, D as RD } from '../src/lib/tools/roth-ladder.ts';
+import { FEDERAL, taxFromBrackets } from '../src/data/federal.ts';
+const rb = { ...RD };
+const L1 = roth(rb);
+
+chk('roth: one ladder row per year', L1.ladder.length, 10, 0);
+// married, $25k other income, std deduction $30k -> taxable 0; headroom is the
+// whole 12% bracket ceiling.
+chk('roth: headroom fills to the bracket ceiling', L1.headroomPerYear, FEDERAL.married.brackets[1].upTo, 1);
+// Total converted EXCEEDS the starting balance, and should: the un-converted
+// remainder keeps growing between conversions, so a ladder moves more than it
+// started with. The invariant that matters is that it never goes negative.
+chk('roth: growth means more is converted than the starting balance', L1.totalConverted > 800000 ? 1 : 0, 1, 0);
+chk('roth: no growth means converted is capped by the balance', roth({ ...rb, growth: 0 }).totalConverted <= 800000 + 1 ? 1 : 0, 1, 0);
+chk('roth: tax is positive when converting', L1.totalTax > 0 ? 1 : 0, 1, 0);
+chk('roth: effective rate is below the ceiling', L1.effectiveRate < 12 ? 1 : 0, 1, 0);
+
+// The headline comparison: laddering must beat converting everything at once.
+chk('roth: all-at-once costs more tax', L1.allAtOnceTax > L1.totalTax ? 1 : 0, 1, 0);
+chk('roth: saving is the difference', L1.savingVsAllAtOnce, L1.allAtOnceTax - L1.totalTax, 0.5);
+chk('roth: all-at-once hits a much higher rate', L1.allAtOnceRate > L1.effectiveRate ? 1 : 0, 1, 0);
+
+// A higher ceiling converts more per year and finishes sooner.
+const hi = roth({ ...rb, ceil: 24 });
+chk('roth: higher ceiling gives more headroom', hi.headroomPerYear > L1.headroomPerYear ? 1 : 0, 1, 0);
+// A higher ceiling does NOT convert more in total — it finishes the balance
+// sooner, so fewer years of growth get converted. What it does is clear the
+// account, which the 12% ladder fails to do inside ten years.
+chk('roth: higher ceiling finishes the balance', hi.fullyConverted ? 1 : 0, 1, 0);
+chk('roth: the 12% ladder does not finish in ten years', L1.fullyConverted ? 1 : 0, 0, 0);
+chk('roth: leftover is reported', L1.leftUnconverted > 0 ? 1 : 0, 1, 0);
+chk('roth: higher ceiling costs a higher effective rate', hi.effectiveRate > L1.effectiveRate ? 1 : 0, 1, 0);
+
+// Other income eats the headroom.
+const busy = roth({ ...rb, income: 120000 });
+chk('roth: other income reduces headroom', busy.headroomPerYear < L1.headroomPerYear ? 1 : 0, 1, 0);
+
+// Paying tax from inside the account puts less into the Roth.
+const inside = roth({ ...rb, payfrom: 'inside' });
+chk('roth: paying tax from inside lands less in the Roth', inside.rothEnd < L1.rothEnd ? 1 : 0, 1, 0);
+
+// Conversion tax must be marginal, not an average rate on the slice.
+const y1 = L1.ladder[0];
+const rothBase = Math.max(0, 25000 - FEDERAL.married.standardDeduction);
+chk('roth: year-one tax is the marginal difference', y1.federalTax,
+  taxFromBrackets(rothBase + y1.converted, FEDERAL.married.brackets) - taxFromBrackets(rothBase, FEDERAL.married.brackets), 0.5);
+
+chk('roth: state tax applied when set', roth({ ...rb, state: 5 }).totalTax > L1.totalTax ? 1 : 0, 1, 0);
+chk('roth: zero balance is safe', roth({ ...rb, bal: 0 }).totalTax, 0);
+chk('roth: balances never go negative', L1.ladder.every((r) => r.remaining >= -0.5) ? 1 : 0, 1, 0);
+
+// ============ Tool 16: lump sum vs DCA ============
+import { compute as ld, D as LD } from '../src/lib/tools/lump-vs-dca.ts';
+const lb = { ...LD };
+const S = ld(lb);
+
+chk('dca: lump sum wins most of the time', S.lumpWinRate > 55 ? 1 : 0, 1, 0);
+chk('dca: win rate is a percentage', S.lumpWinRate >= 0 && S.lumpWinRate <= 100 ? 1 : 0, 1, 0);
+chk('dca: lump median beats DCA median', S.lumpMedian > S.dcaMedian ? 1 : 0, 1, 0);
+chk('dca: advantage matches the medians', S.medianAdvantage, S.lumpMedian - S.dcaMedian, 1);
+chk('dca: DCA has the narrower spread', S.dcaSpread < S.lumpSpread ? 1 : 0, 1, 0);
+chk('dca: spread reduction is positive', S.spreadReduction > 0 ? 1 : 0, 1, 0);
+chk('dca: percentiles ordered', S.lumpP10 <= S.lumpMedian && S.lumpMedian <= S.lumpP90 ? 1 : 0, 1, 0);
+chk('dca: histogram covers every run', S.histogram.reduce((a, b) => a + b.count, 0), S.runs, 0);
+
+// Reproducibility, same reason as the FIRE tool.
+chk('dca: deterministic for identical inputs', ld(lb).lumpWinRate, S.lumpWinRate, 0.0001);
+
+// Spreading over one month is a lump sum, so the two must converge.
+const one = ld({ ...lb, months: 1 });
+chk('dca: one-month DCA is a lump sum', Math.abs(one.lumpMedian - one.dcaMedian) / one.lumpMedian < 0.02 ? 1 : 0, 1, 0);
+
+// A longer DCA period widens the gap, because more money sits out longer.
+const slow = ld({ ...lb, months: 48 });
+chk('dca: a longer drip costs more', slow.medianAdvantage > S.medianAdvantage ? 1 : 0, 1, 0);
+
+// If cash yields more than equities, DCA should stop losing.
+const flip = ld({ ...lb, ret: 1, cash: 8, months: 36 });
+chk('dca: high cash yield reduces the lump advantage', flip.lumpWinRate < S.lumpWinRate ? 1 : 0, 1, 0);
+
+// Zero volatility: no uncertainty, lump wins deterministically on a rising market.
+const calm = ld({ ...lb, vol: 0 });
+chk('dca: zero volatility gives a certain winner', calm.lumpWinRate === 100 || calm.lumpWinRate === 0 ? 1 : 0, 1, 0);
+chk('dca: zero amount is safe', ld({ ...lb, amount: 0 }).lumpMedian, 0);
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

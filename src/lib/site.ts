@@ -41,14 +41,14 @@ export const TOOLS: Tool[] = [
     title: 'Roth Conversion Ladder',
     nav: 'Roth ladder',
     blurb: 'Multi-year bracket filling — how much to convert each year to move a traditional balance across at the lowest total tax.',
-    planId: 15, built: false, group: 'plan',
+    planId: 15, built: true, group: 'plan',
   },
   {
     slug: 'lump-sum-vs-dca-calculator',
     title: 'Lump Sum vs Dollar-Cost Averaging',
     nav: 'Lump sum vs DCA',
     blurb: 'Investing all at once usually wins, and the times it loses are the ones people remember. Both, side by side.',
-    planId: 16, built: false, group: 'invest',
+    planId: 16, built: true, group: 'invest',
   },
 ];
 

@@ -1,0 +1,252 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ToolCockpit from '../../components/ToolCockpit.astro';
+import Field from '@kit/components/Field.astro';
+import Chart from '@kit/components/Chart.astro';
+import DataNote from '@kit/components/DataNote.astro';
+import RelatedTools from '@kit/components/RelatedTools.astro';
+import { SITE, toolBySlug, toolsExcept } from '../../lib/site';
+import { D } from '../../lib/tools/lump-vs-dca';
+
+const tool = toolBySlug('lump-sum-vs-dca-calculator')!;
+const canonical = `/tools/${tool.slug}`;
+const title = `Lump Sum vs Dollar-Cost Averaging Calculator | ${SITE.name}`;
+const description =
+  'Compare investing a windfall all at once against spreading it over months — ' +
+  'win rate, median advantage, and how much narrower the DCA outcome range is.';
+const schema = [{
+  '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: SITE.url },
+    { '@type': 'ListItem', position: 2, name: 'Calculators', item: `${SITE.url}/tools` },
+    { '@type': 'ListItem', position: 3, name: tool.nav, item: `${SITE.url}${canonical}` },
+  ],
+}];
+const related = toolsExcept(tool.slug).map((t) => ({
+  href: `/tools/${t.slug}`, title: t.title, desc: t.blurb,
+}));
+---
+<BaseLayout {title} {description} {canonical} {schema}>
+  <ToolCockpit
+    title="Lump Sum vs Dollar-Cost Averaging"
+    intro="Investing everything at once usually wins, because more money spends more time in the market. Spreading it out buys a narrower range of outcomes at the cost of a lower expected one. Both, side by side."
+    breadcrumbs={[{ href: '/', label: 'Home' }, { href: '/tools', label: 'Calculators' }, { label: tool.nav }]}
+    calcId="ld"
+    railTitle="The decision"
+  >
+    <div slot="value">
+      <div class="cockpit__label">Lump sum ends ahead in</div>
+      <div class="cockpit__value num" data-out="lumpWinRate" data-fmt="percent1">—</div>
+      <div class="cockpit__sub">
+        of <span data-out="runs" data-fmt="number">—</span> simulated markets, by a median of
+        <span data-out="medianAdvantage" data-fmt="currency">—</span>.
+      </div>
+    </div>
+
+    <div slot="chart">
+      <Chart id="chart-ld" height={250}
+             caption="Distribution of lump sum minus DCA across every run. Right of the centre line, investing at once won." />
+    </div>
+
+    <div slot="stats">
+      <div class="cstat">
+        <div class="cstat__label">Lump sum, median</div>
+        <div class="cstat__value num cstat__value--gold" data-out="lumpMedian" data-fmt="currencyCompact">—</div>
+        <div class="cstat__note">10th pct <span data-out="lumpP10" data-fmt="currencyCompact">—</span></div>
+      </div>
+      <div class="cstat">
+        <div class="cstat__label">Drip-fed, median</div>
+        <div class="cstat__value num" data-out="dcaMedian" data-fmt="currencyCompact">—</div>
+        <div class="cstat__note">10th pct <span data-out="dcaP10" data-fmt="currencyCompact">—</span></div>
+      </div>
+      <div class="cstat">
+        <div class="cstat__label">Outcome range narrowed</div>
+        <div class="cstat__value num" data-out="spreadReduction" data-fmt="percent0">—</div>
+        <div class="cstat__note">what DCA actually buys</div>
+      </div>
+      <div class="cstat">
+        <div class="cstat__label">Bad-case difference</div>
+        <div class="cstat__value num" data-out="worstCaseGap" data-fmt="currency" data-sign>—</div>
+        <div class="cstat__note">DCA minus lump, 10th pct</div>
+      </div>
+    </div>
+
+    <div slot="rail">
+      <div class="rail__grid rail__grid--4">
+        <Field name="amount" label="Amount to invest" affix="currency" value={D.amount}
+               min={0} max={100000000} step={5000}
+               slider sliderMin={0} sliderMax={1000000} sliderStep={5000} />
+        <Field name="months" label="Spread over" value={D.months} hint="months"
+               min={1} max={120} step={1} slider sliderMin={1} sliderMax={60} sliderStep={1} />
+        <Field name="horizon" label="Measure after" value={D.horizon} hint="years" min={1} max={50} step={1} />
+        <Field name="ret" label="Expected return" affix="percent" value={D.ret} hint="per year" min={-10} max={25} step={0.25} />
+        <Field name="vol" label="Volatility" affix="percent" value={D.vol} hint="annual std dev" min={0} max={60} step={1} />
+        <Field name="cash" label="Cash yield while waiting" affix="percent" value={D.cash} min={0} max={20} step={0.25} />
+        <Field name="runs" label="Simulations" value={D.runs} min={200} max={10000} step={500} />
+      </div>
+    </div>
+
+    <div id="ld-verdict" style="margin-top:var(--s-5)"></div>
+
+    <div style="margin-top:var(--s-5)">
+      <DataNote source="Simulated, not backtested" verified={false}
+                note="This models the mechanism with random market paths rather than replaying a specific historical index series. The widely cited finding that lump sum wins about two thirds of the time comes from historical studies; this shows why that happens and how it shifts with your assumptions." />
+    </div>
+
+    <section class="prose" style="margin-top:var(--s-7)">
+      <h2>Why lump sum usually wins</h2>
+      <p>
+        The reason is mechanical rather than mysterious. Markets rise more often
+        than they fall. Money invested today is exposed to that rise for longer
+        than money invested in eleven monthly instalments. Averaged across many
+        possible markets, more exposure earns more.
+      </p>
+      <p>
+        Dollar-cost averaging is not a return strategy. It is a way of buying a
+        narrower range of outcomes — and, more honestly, a way of making a
+        decision feel survivable. Both are legitimate purchases. Neither is free.
+      </p>
+      <div class="callout">
+        <strong>DCA has a cost, and this is it.</strong> The median gap above is
+        what you pay for the narrower range. If that feels like a reasonable
+        price for being able to sleep, it is a reasonable price. What it is not
+        is a way of earning more.
+      </div>
+
+      <h2>What "regret management" actually means</h2>
+      <p>
+        The case for drip-feeding is not really about arithmetic. It is that
+        investing a large sum the week before a crash is an experience many
+        people do not recover from — not financially, but behaviourally. They
+        sell, they sit in cash, and they miss the recovery.
+      </p>
+      <p>
+        Measured against that, a slightly lower expected outcome is cheap
+        insurance. The failure mode DCA protects against is not a bad market; it
+        is your own reaction to one. If you know that about yourself, pay the
+        premium deliberately rather than pretending it is optimal.
+      </p>
+
+      <h2>When the answer flips</h2>
+      <ul>
+        <li><strong>Cash yields more than you expect from the market.</strong> With savings paying 5% and modest expected equity returns, waiting is paid for. Raise the cash yield above the expected return above and watch the win rate fall.</li>
+        <li><strong>Very short horizons.</strong> Over one or two years the spread of outcomes dominates the expected difference, and the two converge.</li>
+        <li><strong>You would not have invested at all otherwise.</strong> A DCA plan that gets money invested beats a lump sum plan that never happens because the moment never feels right.</li>
+        <li><strong>The money is not really spare.</strong> If you might need it within the horizon, the question is not lump versus drip — it is whether to invest it at all.</li>
+      </ul>
+
+      <h2>What this is not</h2>
+      <p>
+        This does not backtest a real index. It simulates markets with the mean
+        and volatility you set, then compares both strategies across every path.
+        That is deliberate: publishing a hand-entered century of annual returns
+        as "real historical data" would be unverifiable, and wrong in ways that
+        change the conclusion.
+      </p>
+      <p>
+        The mechanism is what transfers. The widely cited figure — lump sum ahead
+        in roughly two thirds of historical periods — comes from studies of
+        actual index data, and the simulation reproduces the same shape because
+        the same force drives it: time in the market.
+      </p>
+      <p>
+        Real returns also have fatter tails and some mean reversion, neither of
+        which a normal distribution captures. Both slightly favour DCA relative
+        to what is shown here.
+      </p>
+
+      <h2>Regular investing is a different question</h2>
+      <p>
+        Contributing monthly from a salary is not dollar-cost averaging in the
+        sense argued about here. You are investing each amount as soon as you
+        have it, which is the lump sum strategy applied repeatedly. The debate
+        only concerns money you already hold — an inheritance, a bonus, a house
+        sale, a portfolio you are moving.
+      </p>
+
+      <h2>Common questions</h2>
+      <dl class="faq">
+        <dt>What period should I spread over if I do drip-feed?</dt>
+        <dd>
+  X Six to twelve months captures most of the comfort;
+          three years mostly just costs you. Move the slider and watch both
+          numbers.
+        </dd>
+        <dt>Should I wait for a dip instead?</dt>
+        <dd>
+          That is market timing with extra steps, and it has a worse record than
+          either strategy here. The dip may not come, and if it does it may
+          arrive from a level above today's. DCA at least commits you to a
+          schedule.
+        </dd>
+        <dt>Does this account for tax?</dt>
+        <dd>
+          No. In a taxable account the two strategies also differ in when gains
+          are realised and what holding periods apply, which can shift the
+          comparison at the margins.
+        </dd>
+      </dl>
+    </section>
+
+    <RelatedTools items={related} />
+  </ToolCockpit>
+</BaseLayout>
+
+<script>
+  import { mount } from '@kit/calc/engine';
+  import { stackedBarChart } from '@kit/calc/chart';
+  import { currency, currencyCompact } from '@kit/calc/format';
+  import { FIELDS, compute } from '../../lib/tools/lump-vs-dca';
+  import type { LumpDcaModel } from '../../lib/tools/lump-vs-dca';
+
+  mount<LumpDcaModel>({
+    id: 'ld',
+    fields: FIELDS,
+    // 2,000 paths over a decade of months is heavier than a closed form.
+    debounceMs: 180,
+    compute,
+    onRender(m) {
+      const el = document.getElementById('chart-ld');
+      if (el) {
+        stackedBarChart(el, {
+          groups: m.histogram.map((b) => ({
+            label: currencyCompact(b.from),
+            segments: [{
+              value: b.count,
+              // Bars left of zero are the runs where drip-feeding won.
+              color: b.to <= 0 ? 'var(--c-series-3)' : 'var(--c-pop)',
+              name: b.to <= 0 ? 'DCA ahead' : 'Lump sum ahead',
+            }],
+          })),
+          yFormat: (v) => String(Math.round(v)),
+          height: 250,
+          maxLabels: 7,
+        });
+      }
+
+      const verdict = document.getElementById('ld-verdict');
+      if (!verdict) return;
+      const items: string[] = [];
+
+      items.push(`<li><strong>Investing at once won in ${m.lumpWinRate.toFixed(0)}% of runs</strong>, by a median of ${currency(m.medianAdvantage)} — about ${m.medianAdvantagePct.toFixed(1)}% more than drip-feeding over ${m.months} months.</li>`);
+      items.push(`<li><strong>What DCA bought was a ${m.spreadReduction.toFixed(0)}% narrower range of outcomes.</strong> That is the actual product: less distance between a good result and a bad one, at the cost of a lower middle.</li>`);
+
+      if (m.dcaBetterInWorstCase) {
+        items.push(`<li><strong>In the bad cases, drip-feeding did protect you</strong> — ${currency(Math.abs(m.worstCaseGap))} better at the 10th percentile. That is the scenario people are really insuring against.</li>`);
+      } else {
+        items.push(`<li><strong>Drip-feeding did not help even in the bad cases here</strong> — the lump sum was ${currency(Math.abs(m.worstCaseGap))} ahead at the 10th percentile too. At these assumptions there is no scenario where waiting paid.</li>`);
+      }
+
+      // DCA reduces entry-price variance, and that dilutes as the holding
+      // period grows: ~47% narrower at a one-year horizon, ~6% at ten.
+      if (m.horizonMonths >= 60 && m.spreadReduction < 15) {
+        items.push(`<li><strong>Over this horizon the protection has mostly washed out.</strong> Drip-feeding narrows the range of <em>entry prices</em>, but you then hold for ${Math.round(m.horizonMonths / 12)} years, and market variance over that period dwarfs it — hence only ${m.spreadReduction.toFixed(0)}%. DCA does most of its work over short horizons.</li>`);
+      }
+      if (m.lumpWinRate < 55) {
+        items.push(`<li><strong>These assumptions have narrowed the usual gap.</strong> A cash yield close to or above the expected return removes most of the cost of waiting — which is when drip-feeding becomes defensible on the numbers rather than on temperament.</li>`);
+      }
+
+      verdict.innerHTML = `<div class="note"><strong class="note__title">Reading this result</strong><ul style="margin:0;padding-left:1.1rem">${items.join('')}</ul></div>`;
+    },
+  });
+</script>

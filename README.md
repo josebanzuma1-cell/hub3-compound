@@ -16,15 +16,15 @@ npm test        # model checks — run after touching any model
 
 ## What is here
 
-| Tool | Plan | Status |
+| Tool | Plan | What it does |
 |---|---|---|
-| FIRE projection with Monte Carlo | 14 | Live |
-| 401(k) match optimizer | 13 | Live |
-| Roth conversion ladder | 15 | Not built |
-| Lump sum vs dollar-cost averaging | 16 | Not built |
+| FIRE projection with Monte Carlo | 14 | 1,000 simulated paths; success rate rather than one smooth line |
+| 401(k) match optimizer | 13 | Full-match rate, the front-loading trap, vesting |
+| Roth conversion ladder | 15 | Year-by-year bracket filling vs converting all at once |
+| Lump sum vs dollar-cost averaging | 16 | Win rate, median cost of waiting, how much range DCA buys |
 
-Unbuilt tools carry `built: false` in `src/lib/site.ts`, which keeps them out of
-nav, cards, the sitemap and structured data until their pages exist.
+All four plan tools are live. `built: false` in `src/lib/site.ts` is the switch
+that keeps an unfinished tool out of nav, cards, the sitemap and structured data.
 
 ## What makes these different
 
@@ -66,7 +66,25 @@ in a horizontal rail beneath. See `PORTING.md`.
 
 ## Testing
 
-`npm test` runs 43 checks under plain node with no browser, including that the
-simulation is reproducible, percentile bands never cross, zero volatility
-collapses onto the deterministic path, and the smooth-average path always beats
-the median simulation.
+`npm test` runs 77 checks under plain node with no browser, including that both
+simulations are reproducible from their inputs, percentile bands never cross,
+zero volatility collapses onto the deterministic path, a one-month drip equals a
+lump sum, and Roth laddering always costs less tax than converting at once.
+
+Two of those assertions were wrong when first written and the model was right:
+a ladder converts *more* than the opening balance, because the remainder keeps
+growing between conversions; and a higher bracket ceiling converts *less* in
+total, because it clears the account sooner and collects fewer years of growth.
+
+## A note on the DCA tool and historical data
+
+The build plan asked for a backtest against real index returns. This simulates
+instead, and the page says so plainly. Hand-entering a century of annual returns
+and labelling it "real historical data" would be unverifiable and wrong in ways
+that change the conclusion — the same failure as publishing an unsourced tax
+rate.
+
+The mechanism transfers regardless. At a 0% cash yield the model reports lump
+sum ahead in 63% of runs, matching the ~2/3 figure the historical studies find;
+the shipped 4% cash default legitimately lowers that to 57%. Drop a sourced CSV
+in later and the same comparison can replay it.
