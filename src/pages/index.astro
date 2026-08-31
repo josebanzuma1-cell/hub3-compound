@@ -1,0 +1,143 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE, TOOLS, BUILT } from '../lib/site';
+
+const title = `${SITE.name} — ${SITE.tagline}`;
+const description = SITE.description;
+const canonical = '/';
+
+/* The hero curve is real: a percentile fan rendered at build time from the
+   same arithmetic the FIRE tool uses, not a decorative squiggle. Three paths
+   from one mean and one volatility, which is the site's whole argument in a
+   shape. Deterministic seed so the build is reproducible. */
+function path(seed: number, drift: number, vol: number, n = 64) {
+  let s = seed;
+  const rnd = () => ((s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff - 0.5);
+  const pts: number[] = [];
+  let v = 8;
+  for (let i = 0; i < n; i++) { v = Math.max(1, v * (1 + drift + rnd() * vol)); pts.push(v); }
+  const max = Math.max(...pts);
+  return pts.map((p, i) => `${(i / (n - 1)) * 100},${100 - (p / max) * 92}`).join(' ');
+}
+const curves = [
+  { d: path(7, 0.055, 0.10), o: 0.9,  w: 2.0 },
+  { d: path(29, 0.045, 0.16), o: 0.45, w: 1.4 },
+  { d: path(83, 0.032, 0.22), o: 0.28, w: 1.4 },
+];
+
+const schema = [{
+  '@context': 'https://schema.org', '@type': 'ItemList',
+  itemListElement: BUILT.map((t, i) => ({
+    '@type': 'ListItem', position: i + 1, name: t.title, url: `${SITE.url}/tools/${t.slug}`,
+  })),
+}];
+---
+<BaseLayout {title} {description} {canonical} {schema}>
+  <section class="hero">
+    <div class="hero__curve" aria-hidden="true">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+        {curves.map((c) => (
+          <polyline points={c.d} fill="none" stroke="var(--c-pop)"
+                    stroke-opacity={c.o} stroke-width={c.w} vector-effect="non-scaling-stroke" />
+        ))}
+      </svg>
+    </div>
+    <div class="page hero__inner">
+      <div class="hero__eyebrow">Retirement &amp; investing</div>
+      <h1>The average return is <em>not</em> the answer.</h1>
+      <p class="hero__sub">
+        Every retirement calculator compounds one number and draws one smooth
+        line. Markets do not deliver averages in order, and the order is what
+        decides whether the money lasts. These model the range instead.
+      </p>
+      <div class="hero__actions">
+        <a class="btn-gold" href="/tools/fire-calculator">
+          Run a projection
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+        <a class="btn-ghost" href="/tools/401k-match-calculator">Check my 401(k) match</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="page">
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric__value">1,000</div>
+        <div class="metric__label">Market paths per projection</div>
+      </div>
+      <div class="metric">
+        <div class="metric__value">10th–90th</div>
+        <div class="metric__label">Percentile range shown, not just the median</div>
+      </div>
+      <div class="metric">
+        <div class="metric__value">Seeded</div>
+        <div class="metric__label">A shared link reproduces the same result</div>
+      </div>
+      <div class="metric">
+        <div class="metric__value">Nothing sent</div>
+        <div class="metric__label">The simulation runs in your browser</div>
+      </div>
+    </div>
+  </div>
+
+  <section class="section">
+    <div class="page">
+      <div class="section__head">
+        <h2>Calculators</h2>
+        <p>Built around the uncertainty rather than around a single tidy figure.</p>
+      </div>
+      <div class="toolrows">
+        {BUILT.map((t, i) => (
+          <a class="toolrow" href={`/tools/${t.slug}`}>
+            <span class="toolrow__num">{String(i + 1).padStart(2, '0')}</span>
+            <span class="toolrow__title">{t.title}</span>
+            <span class="toolrow__desc">{t.blurb}</span>
+            <span class="toolrow__go" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </span>
+          </a>
+        ))}
+        {TOOLS.filter((t) => !t.built).map((t, i) => (
+          <div class="toolrow" style="opacity:.5;cursor:default">
+            <span class="toolrow__num">{String(BUILT.length + i + 1).padStart(2, '0')}</span>
+            <span class="toolrow__title">{t.title}</span>
+            <span class="toolrow__desc">{t.blurb}</span>
+            <span class="toolrow__go" style="font-size:var(--t-xs);letter-spacing:.08em">SOON</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--tint">
+    <div class="page">
+      <div class="section__head">
+        <h2>Why a range rather than a number</h2>
+      </div>
+      <div class="prose">
+        <p>
+          Take a portfolio earning 5% a year on average, drawn down in
+          retirement. Compound that 5% smoothly and the balance grows for
+          decades. Now deliver the same average as real markets do — some years
+          up 20%, some down 25% — and the outcome depends heavily on which years
+          arrive first.
+        </p>
+        <p>
+          A bad decade while you are still contributing is survivable, even
+          useful: you buy at low prices. The same decade while you are
+          withdrawing forces you to sell more units to fund the same spending,
+          and those units are not there for the recovery. Same average, same
+          volatility, completely different ending.
+        </p>
+        <p>
+          That is sequence-of-returns risk, and a single-line calculator cannot
+          represent it. It reports one outcome from an infinite set and gives no
+          hint of the spread. Running a thousand paths does not predict the
+          future either — but it does show you how wide the future is, which is
+          the more useful thing to know before committing to a retirement date.
+        </p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

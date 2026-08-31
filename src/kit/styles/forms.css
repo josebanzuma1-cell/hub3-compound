@@ -1,0 +1,116 @@
+/* KIT — form controls.
+   Browser-default inputs are the single biggest reason calculator sites
+   look cheap. Everything here is restyled from scratch: consistent height,
+   real focus rings, currency/percent affixes, and sliders paired with
+   number inputs so the value is both draggable and typeable. */
+
+.field { display: block; }
+.field + .field { margin-top: var(--s-4); }
+
+.field__label {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: var(--s-2); font-size: var(--t-sm); font-weight: 560;
+  color: var(--c-ink); margin-bottom: var(--s-2);
+}
+.field__hint { font-size: var(--t-xs); font-weight: 400; color: var(--c-ink-3); }
+
+.field__control { position: relative; display: flex; align-items: stretch; }
+
+.input, .select {
+  font: inherit; font-size: var(--t-base); font-variant-numeric: tabular-nums;
+  color: var(--c-ink); background: var(--c-surface);
+  border: 1px solid var(--c-line-2); border-radius: var(--r-md);
+  padding: 0 var(--s-3); height: 46px; width: 100%;
+  transition: border-color .12s ease, box-shadow .12s ease;
+  appearance: none; -webkit-appearance: none;
+}
+.input:hover, .select:hover { border-color: var(--c-ink-3); }
+.input:focus, .select:focus {
+  outline: none; border-color: var(--c-accent);
+  box-shadow: 0 0 0 3px var(--c-accent-soft);
+}
+.input[aria-invalid='true'] { border-color: var(--c-neg); }
+.input::-webkit-outer-spin-button, .input::-webkit-inner-spin-button {
+  -webkit-appearance: none; margin: 0;
+}
+.input[type='number'] { -moz-appearance: textfield; }
+
+/* currency / percent affixes */
+.field__control[data-affix='pre']  .input { padding-left: 2rem; }
+.field__control[data-affix='post'] .input { padding-right: 2.5rem; }
+/* Height is pinned to the input rather than stretched to the control, because
+   a slider field stacks input + range in a column — `bottom: 0` would centre
+   the affix across both and float it below the text it belongs to. */
+.field__affix {
+  position: absolute; top: 0; height: 46px; display: flex; align-items: center;
+  color: var(--c-ink-3); font-size: var(--t-base); pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+.field__affix--pre  { left: var(--s-3); }
+.field__affix--post { right: var(--s-3); }
+
+.select {
+  padding-right: 2.25rem; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%23767c86' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M1.5 1.75 6 6.25l4.5-4.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right var(--s-3) center;
+  background-size: 12px 8px;
+}
+
+/* slider paired with its number input */
+.field--slider .field__control { flex-direction: column; gap: var(--s-3); }
+.range {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 22px;
+  background: transparent; cursor: pointer; padding: 0; margin: 0;
+}
+.range::-webkit-slider-runnable-track {
+  height: 5px; border-radius: var(--r-full); background: var(--c-line);
+}
+.range::-moz-range-track {
+  height: 5px; border-radius: var(--r-full); background: var(--c-line);
+}
+.range::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 20px; height: 20px; margin-top: -7.5px;
+  border-radius: 50%; background: var(--c-surface);
+  border: 2px solid var(--c-accent); box-shadow: var(--shadow-sm);
+  transition: transform .1s ease;
+}
+.range::-moz-range-thumb {
+  width: 20px; height: 20px; border-radius: 50%; background: var(--c-surface);
+  border: 2px solid var(--c-accent); box-shadow: var(--shadow-sm);
+}
+.range:active::-webkit-slider-thumb { transform: scale(1.12); }
+.range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px var(--c-accent-soft); }
+.range:focus-visible::-moz-range-thumb    { box-shadow: 0 0 0 4px var(--c-accent-soft); }
+
+/* segmented control — replaces radio groups */
+.segmented {
+  display: inline-flex; padding: 3px; gap: 2px;
+  background: var(--c-surface-2); border: 1px solid var(--c-line);
+  border-radius: var(--r-md); width: 100%;
+}
+.segmented__opt { flex: 1; position: relative; }
+.segmented__opt input {
+  position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer;
+}
+.segmented__opt span {
+  display: block; text-align: center; padding: var(--s-2) var(--s-3);
+  font-size: var(--t-sm); font-weight: 540; color: var(--c-ink-2);
+  border-radius: 7px; transition: background .12s ease, color .12s ease;
+  white-space: nowrap;
+}
+.segmented__opt input:checked + span {
+  background: var(--c-surface); color: var(--c-ink); box-shadow: var(--shadow-sm);
+}
+.segmented__opt input:focus-visible + span { box-shadow: 0 0 0 2px var(--c-accent); }
+
+.field-grid { display: grid; gap: var(--s-4); }
+@media (min-width: 560px) { .field-grid--2 { grid-template-columns: 1fr 1fr; } }
+.field-grid > .field + .field { margin-top: 0; }
+
+fieldset { border: 0; padding: 0; margin: 0; }
+legend {
+  font-size: var(--t-xs); font-weight: 640; text-transform: uppercase;
+  letter-spacing: .07em; color: var(--c-ink-3); margin-bottom: var(--s-3);
+  padding: 0;
+}
+.fieldset + .fieldset { margin-top: var(--s-5); padding-top: var(--s-5); border-top: 1px solid var(--c-line); }

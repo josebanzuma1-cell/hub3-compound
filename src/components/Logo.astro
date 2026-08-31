@@ -1,0 +1,27 @@
+---
+/* Brand mark: three ascending bars inside a rounded square, the outer one
+   breaking the frame — compounding that outgrows its container.
+
+   Square silhouette with a broken edge, deliberately unlike the portfolio's
+   other marks (a rounded-square calculator, a circle). At favicon size the
+   outline is what tells them apart. */
+interface Props { size?: number; title?: string }
+const { size = 24, title } = Astro.props;
+---
+<svg
+  width={size} height={size} viewBox="0 0 32 32"
+  fill="none" xmlns="http://www.w3.org/2000/svg"
+  role={title ? 'img' : 'presentation'}
+  aria-label={title}
+  aria-hidden={title ? undefined : 'true'}
+  class="logo"
+>
+  {title && <title>{title}</title>}
+  <rect x="3" y="6" width="26" height="23" rx="6" fill="var(--logo-body, var(--c-accent))" />
+  <g fill="var(--logo-glyph, #fff)">
+    <rect x="8.5"  y="19" width="4.6" height="6"   rx="2.3" />
+    <rect x="14.7" y="15" width="4.6" height="10"  rx="2.3" />
+    <rect x="20.9" y="2"  width="4.6" height="23"  rx="2.3" />
+  </g>
+</svg>
+<style>.logo { display: block; flex: none; }</style>

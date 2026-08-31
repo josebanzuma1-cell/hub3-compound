@@ -1,0 +1,282 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ToolCockpit from '../../components/ToolCockpit.astro';
+import Field from '@kit/components/Field.astro';
+import Segmented from '@kit/components/Segmented.astro';
+import Chart from '@kit/components/Chart.astro';
+import RelatedTools from '@kit/components/RelatedTools.astro';
+import { SITE, toolBySlug, toolsExcept } from '../../lib/site';
+import { D } from '../../lib/tools/match401k';
+
+const tool = toolBySlug('401k-match-calculator')!;
+const canonical = `/tools/${tool.slug}`;
+const title = `401(k) Match Calculator — Capture Every Matched Dollar | ${SITE.name}`;
+const description =
+  'Work out the contribution rate that captures your full employer match, ' +
+  'whether front-loading will cost you match, and how much is actually vested.';
+const schema = [{
+  '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: SITE.url },
+    { '@type': 'ListItem', position: 2, name: 'Calculators', item: `${SITE.url}/tools` },
+    { '@type': 'ListItem', position: 3, name: tool.nav, item: `${SITE.url}${canonical}` },
+  ],
+}];
+const related = toolsExcept(tool.slug).map((t) => ({
+  href: `/tools/${t.slug}`, title: t.title, desc: t.blurb,
+}));
+---
+<BaseLayout {title} {description} {canonical} {schema}>
+  <ToolCockpit
+    title="401(k) Match Optimizer"
+    intro="An employer match is the highest guaranteed return available to almost anyone. This works out the rate that captures all of it — and whether contributing too fast will quietly cost you some."
+    breadcrumbs={[{ href: '/', label: 'Home' }, { href: '/tools', label: 'Calculators' }, { label: tool.nav }]}
+    calcId="k401"
+    railTitle="Your plan"
+  >
+    <div slot="value">
+      <div class="cockpit__label">Employer match this year</div>
+      <div class="cockpit__value num" data-out="matchEarned" data-fmt="currency">—</div>
+      <div class="cockpit__sub">
+        A <span data-out="effectiveReturn" data-fmt="percent0">—</span> return on your own
+        contribution, before the market does anything at all.
+      </div>
+    </div>
+
+    <div slot="chart">
+      <Chart id="chart-401k" height={230}
+             caption="What lands in the account this year, and how much of the match is actually yours to keep today." />
+    </div>
+
+    <div slot="stats">
+      <div class="cstat">
+        <div class="cstat__label">You contribute</div>
+        <div class="cstat__value num" data-out="yourContribution" data-fmt="currency">—</div>
+        <div class="cstat__note">across <span data-out="periods" data-fmt="number">—</span> pay periods</div>
+      </div>
+      <div class="cstat">
+        <div class="cstat__label">Rate for the full match</div>
+        <div class="cstat__value num cstat__value--gold" data-out="fullMatchPct" data-fmt="percent1">—</div>
+        <div class="cstat__note">of every paycheck</div>
+      </div>
+      <div class="cstat">
+        <div class="cstat__label">Match forfeited</div>
+        <div class="cstat__value num" data-out="matchForfeited" data-fmt="currency">—</div>
+        <div class="cstat__note">by hitting the limit early</div>
+      </div>
+      <div class="cstat">
+        <div class="cstat__label">Vested today</div>
+        <div class="cstat__value num" data-out="vestedNow" data-fmt="currency">—</div>
+        <div class="cstat__note"><span data-out="vestedPct" data-fmt="percent0">—</span> of the match</div>
+      </div>
+    </div>
+
+    <div slot="rail">
+      <div class="rail__grid rail__grid--4">
+        <Field name="salary" label="Salary" affix="currency" value={D.salary} min={0} max={10000000} step={1000} />
+        <Field name="freq" label="Pay periods a year" value={D.freq} min={1} max={52} step={1} />
+        <Field name="pct" label="You contribute" affix="percent" value={D.pct}
+               hint="of each paycheck" min={0} max={100} step={0.5}
+               slider sliderMin={0} sliderMax={40} sliderStep={0.5} />
+        <Field name="limit" label="Annual deferral limit" affix="currency" value={D.limit} min={1000} max={100000} step={500} />
+
+        <fieldset class="rail__group">
+          <legend>Employer formula</legend>
+          <div class="rail__grid rail__grid--4">
+            <Field name="m1pct" label="Matches" affix="percent" value={D.m1pct} hint="tier 1 rate" min={0} max={200} step={5} />
+            <Field name="m1cap" label="of your first" affix="percent" value={D.m1cap} hint="of salary" min={0} max={50} step={0.5} />
+            <Field name="m2pct" label="Then matches" affix="percent" value={D.m2pct} hint="tier 2 rate" min={0} max={200} step={5} />
+            <Field name="m2cap" label="of the next" affix="percent" value={D.m2cap} hint="of salary" min={0} max={50} step={0.5} />
+          </div>
+        </fieldset>
+
+        <fieldset class="rail__group">
+          <legend>True-up and vesting</legend>
+          <div class="rail__grid rail__grid--4">
+            <Segmented name="trueup" label="Employer trues up at year end?" value={D.trueup ? '1' : '0'}
+              options={[{ value: '0', label: 'No' }, { value: '1', label: 'Yes' }]} />
+            <Field name="vest" label="Vesting period" value={D.vest} hint="years to fully vest" min={0} max={10} step={1} />
+            <Field name="years" label="Years of service" value={D.years} min={0} max={50} step={0.5} />
+          </div>
+        </fieldset>
+      </div>
+    </div>
+
+    <div id="k401-verdict" style="margin-top:var(--s-5)"></div>
+
+    <section class="prose" style="margin-top:var(--s-7)">
+      <h2>The match is the best return you will ever be offered</h2>
+      <p>
+        A dollar-for-dollar match on the first 3% of salary is a 100% return, in
+        the instant the money lands, before any market involvement. Nothing else
+        available to an ordinary investor comes close. Paying down a 7% loan is
+        a 7% return; this is 100%.
+      </p>
+      <p>
+        That is why the conventional order of operations puts the match first —
+        ahead of extra mortgage payments, ahead of a Roth IRA, ahead of almost
+        everything except genuinely toxic debt. Contributing below the
+        full-match rate is declining part of your salary.
+      </p>
+
+      <h2>The front-loading trap</h2>
+      <p>
+        This one costs real money quietly, and it catches exactly the people
+        trying hardest.
+      </p>
+      <p>
+        Most employers calculate the match <em>per pay period</em>, on that
+        period's contribution. Contribute aggressively — say 60% of every
+        paycheck — and you will hit the annual deferral limit partway through
+        the year. Your contributions then stop. And because there is no
+        contribution in the remaining periods, there is no match in them either.
+      </p>
+      <div class="callout">
+        <strong>You can max out your 401(k) and still lose match.</strong>
+        Hitting the limit in September on a per-period plan forfeits the match
+        for October, November and December. The money is never credited, and
+        nothing on your statement announces it.
+      </div>
+      <p>
+        Some plans include a <strong>true-up</strong>: after year end the
+        employer recalculates the match on your annual total and pays the
+        difference. If yours does, front-loading is harmless. If it does not,
+        the fix is to spread contributions so you reach the limit with the final
+        paycheck rather than before it. Toggle the true-up control above to see
+        the difference on your own numbers.
+      </p>
+      <p>
+        The plan document is the only reliable answer here — HR frequently does
+        not know. The phrase to search for is "true-up" or "annual match
+        calculation".
+      </p>
+
+      <h2>Vesting: whose money is it</h2>
+      <p>
+        Your own contributions are yours immediately, always. The employer match
+        is not, until it vests.
+      </p>
+      <ul>
+        <li><strong>Immediate</strong> — yours on day one. Increasingly common.</li>
+        <li><strong>Cliff</strong> — nothing is yours until a date, typically three years, then all of it. Leaving at two years and eleven months forfeits every matched dollar.</li>
+        <li><strong>Graded</strong> — a fixed share each year, commonly 20% over five. Leaving partway keeps the accrued portion.</li>
+      </ul>
+      <p>
+        This matters most when considering a move. Unvested match is a real cost
+        of leaving and belongs in the comparison alongside salary — the figure
+        above shows what is currently at stake.
+      </p>
+
+      <h2>Where the match sits in the priority order</h2>
+      <ol>
+        <li>Contribute enough to capture the full match.</li>
+        <li>Clear high-interest debt — cards in the twenties beat almost anything.</li>
+        <li>Build an emergency fund, so a bad month does not force you to unwind the rest.</li>
+        <li>Then maximise tax-advantaged space more broadly.</li>
+      </ol>
+      <p>
+        The first step is not a judgement call in the way the others are.
+        Everything below it depends on rates and risk tolerance; the match is
+        arithmetic.
+      </p>
+
+      <h2>What this excludes</h2>
+      <ul>
+        <li><strong>Catch-up contributions</strong> for those 50 and over, which raise the deferral limit.</li>
+        <li><strong>The overall annual additions limit</strong>, capping employee plus employer contributions combined — it binds only at very high contribution levels.</li>
+        <li><strong>Highly-compensated employee limits</strong>, where a plan failing non-discrimination testing may refund part of your contribution.</li>
+        <li><strong>Investment returns.</strong> This is one year of contributions and match; the <a href="/tools/fire-calculator">FIRE projection</a> models what happens to it afterwards.</li>
+        <li><strong>Roth versus traditional.</strong> The match itself is always pre-tax regardless of how you contribute.</li>
+      </ul>
+
+      <h2>Common questions</h2>
+      <dl class="faq">
+        <dt>Should I contribute more than the match?</dt>
+        <dd>
+          Usually yes, but for different reasons — tax deferral and forced
+          saving rather than free money. The match is a step change; everything
+          beyond it is a gradual benefit to weigh against other uses of the cash.
+        </dd>
+        <dt>What if I change jobs mid-year?</dt>
+        <dd>
+          The deferral limit is yours across all employers combined, but each
+          employer's match formula applies only to what you contributed there.
+          Two half-years at two employers can mean less total match than one
+          full year at either — and it is easy to over-contribute against the
+          limit without noticing.
+        </dd>
+        <dt>Does the match count against my contribution limit?</dt>
+        <dd>
+          Not against the elective deferral limit, which applies only to your own
+          contributions. It counts toward the much higher overall additions
+          limit, which most people never approach.
+        </dd>
+      </dl>
+    </section>
+
+    <RelatedTools items={related} />
+  </ToolCockpit>
+</BaseLayout>
+
+<script>
+  import { mount } from '@kit/calc/engine';
+  import { stackedBarChart } from '@kit/calc/chart';
+  import { currency, currencyCompact } from '@kit/calc/format';
+  import { FIELDS, compute } from '../../lib/tools/match401k';
+  import type { Match401kModel } from '../../lib/tools/match401k';
+
+  mount<Match401kModel>({
+    id: 'k401',
+    fields: FIELDS,
+    compute,
+    debounceMs: 70,
+    onRender(m) {
+      const el = document.getElementById('chart-401k');
+      if (el) {
+        stackedBarChart(el, {
+          groups: [
+            { label: 'Into the account', segments: [
+              { value: m.yourContribution, color: 'var(--c-series-3)', name: 'Your contribution' },
+              { value: m.matchEarned, color: 'var(--c-pop)', name: 'Employer match' },
+            ].filter((s) => s.value > 0) },
+            { label: 'Match, vested', segments: [
+              { value: m.vestedNow, color: 'var(--c-pop)', name: 'Vested' },
+              { value: m.unvestedNow, color: '#5a5348', name: 'Not yet vested' },
+            ].filter((s) => s.value > 0) },
+            { label: 'Left behind', segments: [
+              { value: m.missedByUnderContributing, color: '#7a4a4a', name: 'By contributing too little' },
+              { value: m.matchForfeited, color: '#8a5a3a', name: 'By hitting the limit early' },
+            ].filter((s) => s.value > 0) },
+          ],
+          yFormat: currencyCompact,
+          height: 230,
+        });
+      }
+
+      const verdict = document.getElementById('k401-verdict');
+      if (!verdict) return;
+      const items: string[] = [];
+      let warn = false;
+
+      if (!m.capturingFullMatch) {
+        warn = true;
+        items.push(`<li><strong>You are leaving ${currency(m.missedByUnderContributing)} of match on the table.</strong> Raising your contribution to ${m.fullMatchPct}% captures all of it — the highest-certainty return available to you.</li>`);
+      } else {
+        items.push(`<li><strong>You are capturing the full match.</strong> ${m.fullMatchPct}% is the rate that does it; anything above is worth contributing for tax reasons, not for match.</li>`);
+      }
+
+      if (m.matchForfeited > 0) {
+        warn = true;
+        items.push(`<li><strong>Front-loading is costing you ${currency(m.matchForfeited)}.</strong> You hit the deferral limit at pay period ${m.hitLimitAtPeriod} of ${m.periods}, and with no true-up there is no match in the periods after it. Spread contributions to land on the final paycheck, or check whether your plan trues up.</li>`);
+      } else if (m.hitLimitAtPeriod !== null) {
+        items.push(`<li><strong>You hit the limit at period ${m.hitLimitAtPeriod}, but your plan trues up</strong>, so the match is paid on your annual total regardless. Front-loading is harmless here.</li>`);
+      }
+
+      if (m.vestedPct < 100) {
+        items.push(`<li><strong>${currency(m.unvestedNow)} of this match is not yours yet.</strong> You are ${m.vestedPct.toFixed(0)}% vested — leaving before the schedule completes forfeits the rest, which is worth counting when you weigh an offer.</li>`);
+      }
+
+      verdict.innerHTML = `<div class="note${warn ? ' note--warn' : ''}"><strong class="note__title">What to do about it</strong><ul style="margin:0;padding-left:1.1rem">${items.join('')}</ul></div>`;
+    },
+  });
+</script>

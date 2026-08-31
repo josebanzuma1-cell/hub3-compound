@@ -1,0 +1,19 @@
+---
+/* KIT — chart host.
+   Height is reserved here so the SVG drawn by JS cannot shift layout.
+   The client module targets this element by id. */
+interface Props {
+  id: string;
+  height?: number;
+  label?: string;
+  caption?: string;
+}
+const { id, height = 220, label, caption } = Astro.props;
+---
+<figure class="chart">
+  {label && <figcaption class="panel__title" style="margin-bottom:var(--s-3)">{label}</figcaption>}
+  <div id={id} data-chart style={`min-height:${height}px`}>
+    <div class="chart__empty" style={`height:${height}px`}>Loading chart…</div>
+  </div>
+  {caption && <figcaption style="font-size:var(--t-xs);color:var(--c-ink-3);margin-top:var(--s-2)">{caption}</figcaption>}
+</figure>

@@ -1,0 +1,74 @@
+---
+/* Hub-specific tool layout.
+
+   Where the other hubs put controls beside a results card, this puts the
+   headline figure and its chart across the full width on dark, and drops the
+   controls into a horizontal rail underneath. Retirement projections are
+   thirty-year curves; giving them half a column throws away the only thing
+   worth looking at.
+
+   Slots:
+     "value"   — headline figure and supporting line
+     "chart"   — the primary chart (gets the full remaining width)
+     "stats"   — readout row across the bottom of the dark panel
+     "rail"    — the controls
+     default   — everything below: panels, tables, prose
+*/
+interface Props {
+  title: string;
+  intro: string;
+  breadcrumbs: Array<{ href?: string; label: string }>;
+  /** engine root id — must match the id passed to mount() */
+  calcId: string;
+  railTitle?: string;
+}
+const { title, intro, breadcrumbs, calcId, railTitle = 'Your assumptions' } = Astro.props;
+---
+{/* The engine root wraps everything, so a data-out in a panel below the fold
+    still updates. Scoping it to the cockpit would leave those as em dashes. */}
+<div data-calc={calcId} data-state="init">
+  <div class="tool-band">
+    <div class="page">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        {breadcrumbs.map((c, i) => (
+          <>
+            {i > 0 && <span aria-hidden="true">/</span>}
+            {c.href ? <a href={c.href}>{c.label}</a> : <span aria-current="page">{c.label}</span>}
+          </>
+        ))}
+      </nav>
+      <div class="tool-hero">
+        <h1>{title}</h1>
+        <p>{intro}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="page">
+    <section class="cockpit" aria-label="Result">
+      <div class="cockpit__top">
+        <div><slot name="value" /></div>
+        <div class="cockpit__chart"><slot name="chart" /></div>
+      </div>
+      <div class="cockpit__stats"><slot name="stats" /></div>
+    </section>
+
+    <form class="rail" id={`${calcId}-form`}>
+      <div class="rail__head">
+        <span class="rail__title">{railTitle}</span>
+        <span class="rail__actions">
+          <button type="button" class="btn btn--primary" data-action="share">Copy link</button>
+          <button type="button" class="btn" data-action="reset">Reset</button>
+        </span>
+      </div>
+      <slot name="rail" />
+    </form>
+
+    <slot />
+  </div>
+</div>
+
+<script define:vars={{ calcId }}>
+  // Enter inside a text input would otherwise submit and reload the page.
+  document.getElementById(`${calcId}-form`)?.addEventListener('submit', (e) => e.preventDefault());
+</script>

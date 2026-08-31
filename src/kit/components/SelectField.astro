@@ -1,0 +1,25 @@
+---
+/* KIT — labelled select. */
+interface Props {
+  name: string;
+  label: string;
+  hint?: string;
+  value: string | number;
+  options: Array<{ value: string | number; label: string }>;
+}
+const { name, label, hint, value, options } = Astro.props;
+const id = `f-${name}`;
+---
+<div class="field">
+  <label class="field__label" for={id}>
+    <span>{label}</span>
+    {hint && <span class="field__hint">{hint}</span>}
+  </label>
+  <div class="field__control">
+    <select class="select" id={id} data-field={name}>
+      {options.map((o) => (
+        <option value={String(o.value)} selected={String(o.value) === String(value)}>{o.label}</option>
+      ))}
+    </select>
+  </div>
+</div>

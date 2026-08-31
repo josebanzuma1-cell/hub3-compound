@@ -1,0 +1,55 @@
+---
+/* KIT — labelled numeric input, optionally paired with a slider.
+   Bound to the engine by data-field. The slider and the number input carry
+   the same data-field key; the engine keeps them in sync. */
+interface Props {
+  name: string;
+  label: string;
+  hint?: string;
+  value: number | string;
+  affix?: 'currency' | 'percent' | string;
+  min?: number;
+  max?: number;
+  step?: number;
+  slider?: boolean;
+  sliderMin?: number;
+  sliderMax?: number;
+  sliderStep?: number;
+  inputmode?: 'numeric' | 'decimal' | 'text';
+}
+
+const {
+  name, label, hint, value,
+  affix, min, max, step = 1,
+  slider = false, sliderMin, sliderMax, sliderStep,
+  inputmode = 'decimal',
+} = Astro.props;
+
+const affixSide = affix === 'currency' ? 'pre' : affix ? 'post' : undefined;
+const affixText = affix === 'currency' ? '$' : affix === 'percent' ? '%' : affix;
+const id = `f-${name}`;
+---
+<div class={`field${slider ? ' field--slider' : ''}`}>
+  <label class="field__label" for={id}>
+    <span>{label}</span>
+    {hint && <span class="field__hint">{hint}</span>}
+  </label>
+  <div class="field__control" data-affix={affixSide}>
+    {affixSide === 'pre' && <span class="field__affix field__affix--pre" aria-hidden="true">{affixText}</span>}
+    <input
+      class="input" id={id} type="text" inputmode={inputmode}
+      data-field={name} value={value}
+      min={min} max={max} step={step}
+      autocomplete="off" spellcheck="false"
+    />
+    {affixSide === 'post' && <span class="field__affix field__affix--post" aria-hidden="true">{affixText}</span>}
+    {slider && (
+      <input
+        class="range" type="range" data-field={name} data-pair
+        min={sliderMin ?? min ?? 0} max={sliderMax ?? max ?? 100}
+        step={sliderStep ?? step} value={value}
+        aria-label={`${label} slider`} tabindex="-1"
+      />
+    )}
+  </div>
+</div>

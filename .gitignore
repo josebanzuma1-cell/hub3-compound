@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.astro/
+.env
+.env.production
+.DS_Store
+*.log
+
+# Local dev server config — contains an absolute machine path
+.claude/launch.json
+
+.claude/launch.json
+
+.claude/launch.json

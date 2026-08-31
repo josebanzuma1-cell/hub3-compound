@@ -1,0 +1,91 @@
+/* ============================================================
+   KIT — design tokens
+   Hub-agnostic. Only --c-accent* and --font-* are meant to be
+   re-themed per hub. Everything else stays identical across the
+   portfolio so the components behave the same way everywhere.
+
+   Light-only by design. A single committed palette keeps the charts and
+   results cards reading consistently; the SVG series colours are tuned for
+   this ground and would need re-picking for a dark one.
+   ============================================================ */
+
+:root {
+  /* --- palette: warm neutral ground, single accent --- */
+  --c-bg:          #faf8f4;
+  --c-surface:     #ffffff;
+  --c-surface-2:   #f2efe8;
+  --c-ink:         #14161b;
+  --c-ink-2:       #4c5058;
+  --c-ink-3:       #7b7d84;
+  --c-line:        #e6e1d6;
+  --c-line-2:      #cec7b7;
+
+  /* Hub 1 accent: deep forest. Re-theme per hub. */
+  --c-accent:      #17191f;
+  --c-accent-2:    #2c313b;
+  --c-accent-soft: #efeadd;
+  --c-accent-ink:  #ffffff;
+
+  /* semantic — charts and result deltas */
+  --c-pos:         #1c7a54;
+  --c-neg:         #a03123;
+  --c-warn:        #8a5a00;
+  --c-warn-soft:   #fdf4e3;
+  --c-series-1:    #cfa349;   /* principal / your position */
+  --c-series-2:    #2f6f6a;   /* interest / cost */
+  --c-series-3:    #8b8577;   /* comparison / alternative */
+
+  /* --- spacing: 4px base --- */
+  --s-1: 0.25rem; --s-2: 0.5rem;  --s-3: 0.75rem; --s-4: 1rem;
+  --s-5: 1.5rem;  --s-6: 2rem;    --s-7: 3rem;    --s-8: 4rem;
+  --s-9: 6rem;
+
+  /* --- type scale --- */
+  --t-xs:  0.75rem;   --t-sm:  0.875rem; --t-base: 1rem;
+  --t-md:  1.125rem;  --t-lg:  1.3125rem;--t-xl:   1.625rem;
+  --t-2xl: 2rem;      --t-3xl: 2.5rem;   --t-4xl:  3.25rem;
+
+  --font-sans: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont,
+               'Segoe UI', Roboto, sans-serif;
+  --font-num:  'Inter Variable', 'Inter', ui-monospace, 'SF Mono', monospace;
+
+  --lh-tight: 1.15; --lh-snug: 1.35; --lh-body: 1.65;
+
+  --r-sm: 6px; --r-md: 10px; --r-lg: 16px; --r-full: 999px;
+
+  --shadow-sm: 0 1px 2px rgba(22,24,28,.06), 0 1px 1px rgba(22,24,28,.04);
+  --shadow-md: 0 4px 16px rgba(22,24,28,.07), 0 1px 3px rgba(22,24,28,.05);
+
+  --w-prose: 68ch;
+  --w-page:  1180px;
+}
+
+/* ============================================================
+   Bold surface palette.
+   The site leads with saturated colour blocks rather than an
+   accent-on-neutral page. Deep green carries the brand areas;
+   lime supplies the contrast a CTA needs against them — the same
+   job magenta does on indigo for comparison sites.
+   ============================================================ */
+:root {
+  --c-deep:        #0c0e12;   /* hero band, header, footer */
+  --c-deep-2:      #16191f;   /* raised surfaces on the band */
+  --c-deep-line:   #2a2e37;   /* hairlines on the band */
+  --c-on-deep:     #eeece6;   /* body text on the band */
+  --c-on-deep-dim: #9a9a94;   /* secondary text on the band */
+
+  --c-pop:        #cfa349;   /* primary CTA + highlighted words */
+  --c-pop-2:      #ddb662;   /* CTA hover */
+  --c-pop-ink:    #17130a;   /* text on lime */
+
+  /* Three soft tile grounds. Numbered rather than named by hue, so a hub
+     can re-theme them without the token lying about its value. */
+  --c-tint-1:     #f1ede2;
+  --c-tint-2:     #ebeeea;
+  --c-tint-3:     #eeeaf0;
+
+  --r-xl:  22px;
+  --r-2xl: 28px;
+
+  --shadow-lift: 0 10px 30px rgba(7,46,34,.10), 0 2px 6px rgba(7,46,34,.06);
+}

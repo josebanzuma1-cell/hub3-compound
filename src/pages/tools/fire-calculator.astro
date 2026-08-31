@@ -1,0 +1,325 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ToolCockpit from '../../components/ToolCockpit.astro';
+import Field from '@kit/components/Field.astro';
+import Chart from '@kit/components/Chart.astro';
+import RelatedTools from '@kit/components/RelatedTools.astro';
+import { SITE, toolBySlug, toolsExcept } from '../../lib/site';
+import { D } from '../../lib/tools/fire';
+
+const tool = toolBySlug('fire-calculator')!;
+const canonical = `/tools/${tool.slug}`;
+const title = `FIRE Calculator with Monte Carlo Simulation | ${SITE.name}`;
+const description =
+  'Project financial independence across a thousand simulated market paths ' +
+  'instead of one smooth average, and see the success rate a single-line ' +
+  'projection cannot show you.';
+const schema = [{
+  '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: SITE.url },
+    { '@type': 'ListItem', position: 2, name: 'Calculators', item: `${SITE.url}/tools` },
+    { '@type': 'ListItem', position: 3, name: tool.nav, item: `${SITE.url}${canonical}` },
+  ],
+}];
+const related = toolsExcept(tool.slug).map((t) => ({
+  href: `/tools/${t.slug}`, title: t.title, desc: t.blurb,
+}));
+---
+<BaseLayout {title} {description} {canonical} {schema}>
+  <ToolCockpit
+    title="FIRE Calculator with Monte Carlo"
+    intro="Most retirement calculators compound one average return and draw a single smooth line. Markets do not deliver averages in order. This runs a thousand paths and reports how many of them lasted."
+    breadcrumbs={[{ href: '/', label: 'Home' }, { href: '/tools', label: 'Calculators' }, { label: tool.nav }]}
+    calcId="fire"
+    railTitle="Your assumptions"
+  >
+    <div slot="value">
+      <div class="cockpit__label">Plan succeeds in</div>
+      <div class="cockpit__value num" data-out="successRate" data-fmt="percent1">—</div>
+      <div class="cockpit__sub">
+        of <span data-out="runs" data-fmt="number">—</span> simulated market paths, meaning the
+        money outlasted you. Anything above 85% is generally considered robust.
+      </div>
+    </div>
+
+    <div slot="chart">
+      <Chart id="chart-fire" height={260}
+             caption="Shaded range is the 10th to 90th percentile of simulated outcomes. The dashed line is what a single average return would have predicted." />
+    </div>
+
+    <div slot="stats">
+      <div class="cstat">
+        <div class="cstat__label">Median pot at retirement</div>
+        <div class="cstat__value num cstat__value--gold" data-out="potAtRetirementMedian" data-fmt="currencyCompact">—</div>
+        <div class="cstat__note">in today's money</div>
+      </div>
+      <div class="cstat">
+        <div class="cstat__label">FI number at 4%</div>
+        <div class="cstat__value num" data-out="fiNumber" data-fmt="currencyCompact">—</div>
+        <div class="cstat__note">25× your spending</div>
+      </div>
+      <div class="cstat">
+        <div class="cstat__label">First-year withdrawal</div>
+        <div class="cstat__value num" data-out="firstYearWithdrawalRate" data-fmt="percent">—</div>
+        <div class="cstat__note">of the median pot</div>
+      </div>
+      <div class="cstat">
+        <div class="cstat__label">Median ending balance</div>
+        <div class="cstat__value num" data-out="medianEnding" data-fmt="currencyCompact">—</div>
+        <div class="cstat__note">at age <span data-out="until" data-fmt="number">—</span></div>
+      </div>
+    </div>
+
+    <div slot="rail">
+      <div class="rail__grid rail__grid--4">
+        <Field name="age" label="Age now" value={D.age} min={16} max={90} step={1} />
+        <Field name="retire" label="Retire at" value={D.retire} min={20} max={95} step={1} />
+        <Field name="until" label="Plan until age" value={D.until} min={40} max={110} step={1} />
+        <Field name="pot" label="Invested now" affix="currency" value={D.pot} min={0} max={50000000} step={5000} />
+        <Field name="save" label="Saved per year" affix="currency" value={D.save} min={0} max={5000000} step={1000} />
+        <Field name="spend" label="Spending per year in retirement" affix="currency" value={D.spend}
+               hint="today's money" min={0} max={5000000} step={1000} />
+        <Field name="ret" label="Real return" affix="percent" value={D.ret}
+               hint="after inflation" min={-5} max={20} step={0.25} />
+        <Field name="vol" label="Volatility" affix="percent" value={D.vol}
+               hint="annual standard deviation" min={0} max={60} step={1} />
+        <Field name="fees" label="Fees" affix="percent" value={D.fees} hint="expense ratio" min={0} max={5} step={0.05} />
+        <Field name="runs" label="Simulations" value={D.runs} min={200} max={5000} step={100} />
+      </div>
+    </div>
+
+    <div id="fire-verdict" style="margin-top:var(--s-5)"></div>
+
+    <div class="panels panels--2">
+      <div class="panel-card">
+        <div class="panel-card__title">Outcome spread at the end</div>
+        <div class="table-wrap">
+          <table class="data" id="fire-spread">
+            <thead><tr><th>Percentile</th><th>Ending balance</th><th>Reading</th></tr></thead>
+            <tbody><tr><td colspan="3" style="text-align:center;color:var(--c-ink-3)">Simulating…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel-card">
+        <div class="panel-card__title">What one average return hides</div>
+        <p style="font-size:var(--t-sm);color:var(--c-ink-2);line-height:1.65">
+          Compounding a single average return predicts an ending balance of
+          <strong class="num" data-out="deterministicEnd" data-fmt="currency">—</strong>.
+          The median simulation, with the same average and the same volatility,
+          ends at <strong class="num" data-out="medianEnding" data-fmt="currency">—</strong>.
+        </p>
+        <p style="font-size:var(--t-sm);color:var(--c-ink-2);line-height:1.65;margin-top:var(--s-3)">
+          The gap — <strong class="num" data-out="sequenceRiskGap" data-fmt="currency">—</strong> —
+          is not a rounding error. It is what volatility costs a portfolio that
+          is being drawn down, and it is invisible to every calculator that
+          draws one line.
+        </p>
+      </div>
+    </div>
+
+    <section class="prose" style="margin-top:var(--s-7)">
+      <h2>Why one average return is the wrong model</h2>
+      <p>
+        A conventional retirement calculator takes your expected return, applies
+        it every year without variation, and draws a smooth curve. It is
+        arithmetically correct and practically misleading, because it answers a
+        question nobody has: what happens if markets deliver exactly 5% every
+        single year for fifty years.
+      </p>
+      <p>
+        Markets deliver an average made of very unequal years. While you are
+        still saving, that mostly does not matter — a bad decade early gets
+        bought at low prices and recovers. Once you are withdrawing, it matters
+        enormously, because a bad decade forces you to sell more units to fund
+        the same spending, and those units are gone when the recovery arrives.
+      </p>
+      <div class="callout">
+        <strong>This is sequence-of-returns risk.</strong> Two retirees with
+        identical average returns and identical volatility, differing only in
+        the order the years arrived, can end up one comfortable and one broke.
+        The average cannot distinguish them. A simulation can.
+      </div>
+
+      <h2>What the simulation does</h2>
+      <p>
+        Each run draws a fresh return for every year from a distribution with
+        the mean and volatility you set, then walks your balance forward:
+        contributions while you are working, withdrawals once you are not. The
+        run counts as a success if the money outlasts the age you plan to.
+      </p>
+      <p>
+        Run that a thousand times and the spread of outcomes becomes visible.
+        The shaded band on the chart is the 10th to 90th percentile — eight runs
+        in ten landed inside it. The dashed line is what a single average return
+        would have told you, and the distance between it and the median is the
+        cost of pretending volatility does not exist.
+      </p>
+
+      <h2>Reading the success rate</h2>
+      <p>
+        A 95% success rate does not mean you have a 5% chance of destitution. It
+        means that in 5% of simulated paths, a rigid plan that never adjusted
+        spending ran out before the horizon. Real people notice a bad decade and
+        cut back, which is why the rate understates real-world resilience.
+      </p>
+      <p>
+        Conventional planning treats 85–90% as robust. Chasing 100% is usually a
+        mistake: it requires either working years longer or spending
+        substantially less than you could, insuring against a scenario you would
+        have adapted to anyway.
+      </p>
+
+      <h2>The inputs that decide it</h2>
+      <h3>Real return, not nominal</h3>
+      <p>
+        Enter the return <em>after</em> inflation. Everything here is in today's
+        money, so spending stays constant in real terms and you never have to
+        reason about a future dollar. Broad equity markets have historically
+        returned roughly 6–7% real over long periods; a mixed portfolio less.
+        Using a nominal figure like 9% here will overstate the result badly.
+      </p>
+      <h3>Volatility</h3>
+      <p>
+        The annual standard deviation of returns. Around 15% is typical for a
+        broad equity portfolio; a balanced fund is nearer 9–10%. Set it to zero
+        and the simulation collapses onto the smooth line — useful for seeing
+        exactly what the volatility is costing you.
+      </p>
+      <h3>Fees</h3>
+      <p>
+        Subtracted from the return every year. A 1% expense ratio instead of
+        0.05% sounds trivial and is not — over forty years it compounds into a
+        substantial share of the final balance. Move the fee input and watch the
+        success rate, not just the ending number.
+      </p>
+      <h3>The 4% rule</h3>
+      <p>
+        The FI number shown is 25× your spending, which is the 4% rule restated.
+        It came from a study of 30-year US retirements and was never intended as
+        a law. For a retirement starting at 45 and running fifty years it is
+        optimistic; for a portfolio with a large bond allocation it may be too.
+        The success rate above is the more honest answer, because it uses your
+        actual horizon.
+      </p>
+
+      <h2>What this model leaves out</h2>
+      <ul>
+        <li><strong>Fat tails and mean reversion.</strong> Returns are drawn from a normal distribution. Real markets crash harder than normal distributions predict, and partially recover afterwards. This likely understates both extremes.</li>
+        <li><strong>Flexible spending.</strong> Withdrawals are a fixed real amount. Cutting spending 10% in bad years raises success rates dramatically, and is what most retirees actually do.</li>
+        <li><strong>Taxes.</strong> Everything is pre-tax and account-agnostic. Where the money sits — traditional, Roth, or taxable — changes what a given withdrawal costs.</li>
+        <li><strong>Social Security, pensions and annuities</strong>, all of which reduce the portfolio's burden later in retirement.</li>
+        <li><strong>One-off costs</strong> — a roof, a care home, a child's education.</li>
+        <li><strong>Correlation between your job and the market</strong>, which matters if a downturn also costs you the income you were saving.</li>
+      </ul>
+
+      <h2>Common questions</h2>
+      <dl class="faq">
+        <dt>Why does the same input always give the same answer?</dt>
+        <dd>
+          The simulation is seeded from your inputs. That is deliberate: a
+          shared link has to reproduce the result the sender saw, and nudging a
+          slider should change the answer because the assumption changed, not
+          because the dice were rerolled.
+        </dd>
+        <dt>Is 1,000 runs enough?</dt>
+        <dd>
+          For a success rate to about a percentage point, yes. Raise it to 5,000
+          if you want the percentile bands to look smoother; the headline figure
+          will barely move.
+        </dd>
+        <dt>Why is my success rate lower than other calculators show?</dt>
+        <dd>
+          Usually because they compound an average instead of simulating, or
+          because they assume flexible spending. Both make the number look
+          better. Set volatility to zero here and you will get their answer.
+        </dd>
+        <dt>Should I retire on 59%?</dt>
+        <dd>
+          Not as the plan stands. The useful move is to see which lever fixes it
+          most cheaply — a couple more working years, slightly lower spending,
+          or lower fees. Drag each and watch the headline. The one that moves it
+          most for the least sacrifice is your answer.
+        </dd>
+      </dl>
+    </section>
+
+    <RelatedTools items={related} />
+  </ToolCockpit>
+</BaseLayout>
+
+<script>
+  import { mount } from '@kit/calc/engine';
+  import { lineChart } from '@kit/calc/chart';
+  import { currency, currencyCompact } from '@kit/calc/format';
+  import { FIELDS, compute } from '../../lib/tools/fire';
+  import type { FireModel } from '../../lib/tools/fire';
+
+  mount<FireModel>({
+    id: 'fire',
+    fields: FIELDS,
+    // A 1,000-path simulation is ~40ms; debounce harder than a closed-form
+    // model so dragging a slider does not queue a dozen of them.
+    debounceMs: 160,
+    compute,
+    onRender(m) {
+      const el = document.getElementById('chart-fire');
+      if (el) {
+        lineChart(el, {
+          series: [
+            { name: '90th percentile', color: '#3e4a55', points: m.p90 },
+            { name: 'Median', color: 'var(--c-pop)', points: m.p50, fill: true },
+            { name: '10th percentile', color: '#7a4a4a', points: m.p10 },
+            { name: 'Single average return', color: '#6f7a86', points: m.deterministic, dashed: true },
+          ],
+          yFormat: currencyCompact,
+          xFormat: (i) => `Age ${m.ages[i] ?? ''}`,
+          xTicks: m.ages
+            .map((a, i) => ({ at: i, label: String(a) }))
+            .filter((_, i) => i % Math.max(1, Math.ceil(m.ages.length / 8)) === 0),
+          crosshair: true,
+          logScale: true,
+          height: 260,
+        });
+      }
+
+      const body = document.querySelector('#fire-spread tbody');
+      if (body) {
+        const rows: Array<[string, number, string]> = [
+          ['90th', m.p90[m.p90.length - 1], 'a good run'],
+          ['50th — median', m.p50[m.p50.length - 1], 'the middle outcome'],
+          ['10th', m.p10[m.p10.length - 1], m.p10[m.p10.length - 1] <= 0 ? 'ran out' : 'a poor run'],
+        ];
+        body.innerHTML = rows.map(([label, v, note]) =>
+          `<tr><td>${label}</td><td>${currency(v)}</td><td style="text-align:left;color:var(--c-ink-3)">${note}</td></tr>`).join('');
+      }
+
+      const verdict = document.getElementById('fire-verdict');
+      if (!verdict) return;
+      const items: string[] = [];
+      const rate = m.successRate;
+
+      if (rate >= 90) {
+        items.push(`<li><strong>This plan is robust.</strong> ${rate.toFixed(0)}% of paths lasted to age ${m.until}. Pushing toward 100% would cost more in extra working years than the remaining risk is worth.</li>`);
+      } else if (rate >= 75) {
+        items.push(`<li><strong>This plan is workable but not comfortable.</strong> ${rate.toFixed(0)}% of paths lasted. Most planners would want 85% or better before committing to a retirement date.</li>`);
+      } else {
+        items.push(`<li><strong>This plan fails too often.</strong> Only ${rate.toFixed(0)}% of paths lasted to age ${m.until}${m.medianDepletionAge ? `, and the median failure ran out around age ${Math.round(m.medianDepletionAge)}` : ''}. Try later retirement, lower spending, or lower fees — and see which moves the number most.</li>`);
+      }
+
+      if (m.firstYearWithdrawalRate > 4.5) {
+        items.push(`<li><strong>Your first-year withdrawal is ${m.firstYearWithdrawalRate.toFixed(1)}% of the pot.</strong> That is above the 4% guideline, and over a long retirement it is the single biggest driver of failure here.</li>`);
+      } else if (m.firstYearWithdrawalRate > 0 && m.firstYearWithdrawalRate < 3.2) {
+        items.push(`<li><strong>Your withdrawal rate is only ${m.firstYearWithdrawalRate.toFixed(1)}%.</strong> That is conservative. You could likely retire earlier or spend more without meaningfully raising the risk.</li>`);
+      }
+
+      if (m.yearsInRetirement > 40) {
+        items.push(`<li><strong>You are planning a ${m.yearsInRetirement}-year retirement.</strong> The 4% rule came from 30-year horizons and is optimistic over this long. The success rate above uses your actual horizon, so trust it over the 25× figure.</li>`);
+      }
+
+      items.push(`<li><strong>A single average return would have predicted ${currency(m.deterministicEnd)}</strong> against a median simulation of ${currency(m.medianEnding)}. That ${currency(m.sequenceRiskGap)} gap is what volatility costs a portfolio being drawn down.</li>`);
+
+      verdict.innerHTML = `<div class="note${rate < 75 ? ' note--warn' : ''}"><strong class="note__title">Reading this result</strong><ul style="margin:0;padding-left:1.1rem">${items.join('')}</ul></div>`;
+    },
+  });
+</script>

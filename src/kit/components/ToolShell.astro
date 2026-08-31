@@ -1,0 +1,56 @@
+---
+/* KIT — generic tool page structure.
+   Breadcrumbs, hero, and the controls/results grid.
+
+   Slots: "controls", "results", and the default slot for everything below
+   the fold (prose, tables, related tools). */
+
+interface Props {
+  title: string;
+  intro: string;
+  breadcrumbs: Array<{ href?: string; label: string }>;
+  /** engine root id — must match the id passed to mount() */
+  calcId: string;
+}
+const { title, intro, breadcrumbs, calcId } = Astro.props;
+---
+{/* The engine root wraps the whole page, not just the controls/results grid:
+    tools routinely put data-out values in sections below the fold (a pro forma
+    total, an IRR), and scoping the root to the grid silently leaves those
+    showing an em dash forever. */}
+<div data-calc={calcId} data-state="init">
+  {/* Tinted band carries the identity down from the homepage; the calculator
+      itself stays on plain ground so the results card reads as an instrument
+      rather than another marketing panel. */}
+  <div class="tool-band">
+    <div class="page">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        {breadcrumbs.map((c, i) => (
+          <>
+            {i > 0 && <span aria-hidden="true">/</span>}
+            {c.href ? <a href={c.href}>{c.label}</a> : <span aria-current="page">{c.label}</span>}
+          </>
+        ))}
+      </nav>
+
+      <div class="tool-hero">
+        <h1>{title}</h1>
+        <p>{intro}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="tool-grid">
+      <div class="panel">
+        <div class="panel__title">Your numbers</div>
+        <slot name="controls" />
+      </div>
+      <div>
+        <slot name="results" />
+      </div>
+    </div>
+
+    <slot />
+  </div>
+</div>

@@ -1,0 +1,247 @@
+/* HUB-SPECIFIC layout layer. Not in src/kit/ — see PORTING.md.
+
+   Two deliberate departures from the other hubs:
+
+   1. THE CALCULATOR LAYOUT IS INVERTED. Hubs 1 and 2 put controls in a left
+      column and a results card in a right one. Here the result and its chart
+      occupy a full-width dark "cockpit" at the top, with the controls in a
+      horizontal rail beneath it. For projection tools the chart *is* the
+      product — a thirty-year curve squeezed into a half-width card wastes the
+      only thing worth looking at.
+
+   2. Near-black interactive elements with a single gold highlight, on warm
+      paper. No saturated brand colour anywhere. */
+
+/* ---------- header ---------- */
+.site-header--ink {
+  background: var(--c-deep);
+  border-bottom: 1px solid var(--c-deep-line);
+}
+.site-header--ink .site-header__inner { min-height: 72px; }
+.site-header--ink .brand { color: #fff; letter-spacing: -0.04em; }
+.site-header--ink .brand:hover { color: #fff; }
+.site-header--ink .nav a {
+  color: var(--c-on-deep-dim); font-weight: 460; font-size: var(--t-sm);
+  letter-spacing: -0.005em;
+}
+.site-header--ink .nav a:hover,
+.site-header--ink .nav a[aria-current='page'] { color: var(--c-pop); }
+.site-header--ink { --logo-body: var(--c-pop); --logo-glyph: var(--c-deep); }
+
+.header-cta {
+  display: none; align-items: center; gap: var(--s-2);
+  border: 1px solid var(--c-deep-line); color: var(--c-on-deep);
+  font-size: var(--t-sm); font-weight: 540; text-decoration: none;
+  padding: 0 var(--s-4); height: 38px; border-radius: var(--r-full);
+  transition: border-color .15s ease, color .15s ease;
+}
+.header-cta:hover { border-color: var(--c-pop); color: var(--c-pop); }
+@media (min-width: 900px) { .header-cta { display: inline-flex; } }
+
+/* ---------- editorial hero: oversized type over a live curve ---------- */
+.hero {
+  background: var(--c-deep);
+  color: var(--c-on-deep);
+  position: relative;
+  overflow: hidden;
+  padding-block: var(--s-9) var(--s-8);
+}
+.hero__curve {
+  position: absolute; inset: auto 0 0 0; height: 62%;
+  pointer-events: none; opacity: .5;
+}
+.hero__curve svg { width: 100%; height: 100%; display: block; }
+.hero__inner { position: relative; max-width: 54rem; }
+.hero__eyebrow {
+  font-size: var(--t-xs); font-weight: 600; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--c-pop); margin-bottom: var(--s-4);
+}
+.hero h1 {
+  font-size: clamp(2.4rem, 6.4vw, 4.6rem);
+  line-height: 1.02; letter-spacing: -0.045em; color: #fff;
+  font-weight: 600;
+}
+.hero h1 em {
+  font-style: italic; font-weight: 500; color: var(--c-pop);
+}
+.hero__sub {
+  margin-top: var(--s-5); font-size: var(--t-md); line-height: 1.6;
+  color: var(--c-on-deep-dim); max-width: 40rem;
+}
+.hero__actions { margin-top: var(--s-6); display: flex; flex-wrap: wrap; gap: var(--s-3); }
+
+.btn-gold {
+  display: inline-flex; align-items: center; gap: var(--s-2);
+  background: var(--c-pop); color: var(--c-pop-ink);
+  border: 0; border-radius: var(--r-full); height: 50px; padding-inline: var(--s-6);
+  font: inherit; font-size: var(--t-base); font-weight: 620; letter-spacing: -0.01em;
+  text-decoration: none; cursor: pointer; transition: background .15s ease;
+}
+.btn-gold:hover { background: var(--c-pop-2); color: var(--c-pop-ink); }
+.btn-ghost {
+  display: inline-flex; align-items: center; gap: var(--s-2);
+  border: 1px solid var(--c-deep-line); color: var(--c-on-deep);
+  border-radius: var(--r-full); height: 50px; padding-inline: var(--s-5);
+  font-size: var(--t-base); font-weight: 520; text-decoration: none;
+  transition: border-color .15s ease;
+}
+.btn-ghost:hover { border-color: var(--c-on-deep-dim); color: #fff; }
+
+/* metric strip under the hero, sitting half over the fold */
+.metrics {
+  display: grid; gap: 1px; background: var(--c-line);
+  border: 1px solid var(--c-line); border-radius: var(--r-lg); overflow: hidden;
+  grid-template-columns: repeat(2, 1fr); margin-top: calc(var(--s-7) * -1);
+  position: relative; z-index: 2; box-shadow: var(--shadow-lift);
+}
+@media (min-width: 820px) { .metrics { grid-template-columns: repeat(4, 1fr); } }
+.metric { background: var(--c-surface); padding: var(--s-5); }
+.metric__value {
+  font-size: var(--t-xl); font-weight: 640; letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums; color: var(--c-ink);
+}
+.metric__label { font-size: var(--t-sm); color: var(--c-ink-3); margin-top: var(--s-1); }
+
+/* ============================================================
+   THE COCKPIT — this hub's calculator layout.
+   Result and chart full width on dark; controls in a rail below.
+   ============================================================ */
+.cockpit {
+  background: var(--c-deep); color: var(--c-on-deep);
+  border-radius: var(--r-2xl); overflow: hidden;
+  box-shadow: var(--shadow-lift);
+}
+.cockpit__top {
+  display: grid; gap: var(--s-5); padding: var(--s-6) var(--s-6) var(--s-4);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 860px) {
+  .cockpit__top { grid-template-columns: minmax(0, 20rem) minmax(0, 1fr); align-items: end; gap: var(--s-7); }
+}
+.cockpit__label {
+  font-size: var(--t-xs); font-weight: 600; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--c-pop);
+}
+.cockpit__value {
+  font-size: clamp(2.4rem, 5.6vw, 3.6rem); font-weight: 620;
+  letter-spacing: -0.045em; line-height: 1.02; color: #fff;
+  font-variant-numeric: tabular-nums; margin-top: var(--s-2);
+}
+.cockpit__sub { font-size: var(--t-sm); color: var(--c-on-deep-dim); margin-top: var(--s-3); line-height: 1.55; }
+
+/* The chart owns the width. This is the whole reason for the layout. */
+.cockpit__chart { min-width: 0; }
+.cockpit__chart .chart__axis text { fill: #7e7f7a; }
+.cockpit__chart .chart__grid line { stroke: #23262d; }
+.cockpit__chart .chart__legend { color: var(--c-on-deep-dim); }
+.cockpit__chart .chart__empty { color: var(--c-on-deep-dim); }
+
+/* readout row across the bottom of the dark panel */
+.cockpit__stats {
+  display: grid; gap: 1px; background: var(--c-deep-line);
+  border-top: 1px solid var(--c-deep-line);
+  grid-template-columns: repeat(2, 1fr);
+}
+@media (min-width: 720px) { .cockpit__stats { grid-template-columns: repeat(4, 1fr); } }
+.cstat { background: var(--c-deep); padding: var(--s-4) var(--s-5); }
+.cstat__label { font-size: var(--t-xs); color: var(--c-on-deep-dim); }
+.cstat__value {
+  font-size: var(--t-lg); font-weight: 600; letter-spacing: -0.025em;
+  color: #fff; font-variant-numeric: tabular-nums; margin-top: 4px;
+}
+.cstat__value--gold { color: var(--c-pop); }
+.cstat__note { font-size: var(--t-xs); color: #71736f; margin-top: 2px; }
+
+/* ---------- control rail: horizontal, not a sidebar ---------- */
+.rail {
+  background: var(--c-surface); border: 1px solid var(--c-line);
+  border-radius: var(--r-lg); padding: var(--s-5); margin-top: var(--s-5);
+}
+.rail__head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: var(--s-4); margin-bottom: var(--s-4);
+}
+.rail__title {
+  font-size: var(--t-xs); font-weight: 640; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--c-ink-3);
+}
+.rail__grid { display: grid; gap: var(--s-4) var(--s-5); grid-template-columns: 1fr; }
+@media (min-width: 620px) { .rail__grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 980px) { .rail__grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1280px) { .rail__grid--4 { grid-template-columns: repeat(4, 1fr); } }
+.rail__grid > .field + .field { margin-top: 0; }
+.rail__group {
+  grid-column: 1 / -1; border-top: 1px solid var(--c-line);
+  padding-top: var(--s-4); margin-top: var(--s-1);
+}
+.rail__group > legend { margin-bottom: var(--s-3); }
+.rail__actions { display: flex; gap: var(--s-2); flex-wrap: wrap; }
+
+/* ---------- panels below the fold ---------- */
+.panels { display: grid; gap: var(--s-5); grid-template-columns: 1fr; margin-top: var(--s-6); }
+@media (min-width: 940px) { .panels--2 { grid-template-columns: repeat(2, 1fr); } }
+.panel-card {
+  background: var(--c-surface); border: 1px solid var(--c-line);
+  border-radius: var(--r-lg); padding: var(--s-5); min-width: 0;
+}
+.panel-card__title {
+  font-size: var(--t-xs); font-weight: 640; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--c-ink-3); margin-bottom: var(--s-4);
+}
+
+/* ---------- black buttons: the premium default ---------- */
+.btn--primary {
+  background: var(--c-accent); border-color: var(--c-accent); color: #fff;
+}
+.btn--primary:hover { background: var(--c-accent-2); border-color: var(--c-accent-2); color: #fff; }
+
+/* ---------- section rhythm ---------- */
+.section { padding-block: var(--s-8); }
+.section--tint { background: var(--c-surface-2); }
+.section__head { max-width: 44rem; margin-bottom: var(--s-6); }
+.section__head h2 {
+  font-size: clamp(1.6rem, 3.4vw, 2.3rem); letter-spacing: -0.035em;
+  font-weight: 600; color: var(--c-ink);
+}
+.section__head p { margin-top: var(--s-3); color: var(--c-ink-2); font-size: var(--t-md); }
+
+/* Editorial index cards — wide rows with a rule, not a tile grid. */
+.toolrows { border-top: 1px solid var(--c-line); }
+.toolrow {
+  display: grid; gap: var(--s-2) var(--s-5); padding-block: var(--s-5);
+  border-bottom: 1px solid var(--c-line);
+  grid-template-columns: 1fr; text-decoration: none; color: var(--c-ink);
+  transition: background .14s ease;
+}
+@media (min-width: 820px) {
+  .toolrow { grid-template-columns: 3rem minmax(0, 18rem) minmax(0, 1fr) 2rem; align-items: baseline; }
+}
+.toolrow:hover { background: var(--c-surface); color: var(--c-ink); }
+.toolrow__num {
+  font-size: var(--t-sm); font-weight: 600; color: var(--c-pop);
+  font-variant-numeric: tabular-nums; letter-spacing: .06em;
+}
+.toolrow__title { font-size: var(--t-md); font-weight: 620; letter-spacing: -0.02em; }
+.toolrow__desc { font-size: var(--t-sm); color: var(--c-ink-2); line-height: 1.6; }
+.toolrow__go { color: var(--c-ink-3); justify-self: end; }
+.toolrow:hover .toolrow__go { color: var(--c-pop); }
+
+/* ---------- tool page band ---------- */
+.tool-band { padding-block: var(--s-5) var(--s-4); }
+.tool-band .tool-hero { padding-block: var(--s-3) var(--s-5); }
+.tool-band .tool-hero h1 {
+  font-size: clamp(1.9rem, 4vw, 2.8rem); letter-spacing: -0.04em;
+  font-weight: 600; max-width: 22ch;
+}
+.page-band { padding-block: var(--s-5) 0; }
+
+/* ---------- ink footer ---------- */
+.site-footer--deep {
+  background: var(--c-deep); color: var(--c-on-deep-dim);
+  border-top: 0; margin-top: var(--s-8);
+}
+.site-footer--deep h4 { color: #fff; }
+.site-footer--deep a { color: var(--c-on-deep-dim); }
+.site-footer--deep a:hover { color: var(--c-pop); }
+.site-footer--deep .footer-legal { border-top-color: var(--c-deep-line) !important; }
+.site-footer--deep { --logo-body: var(--c-pop); --logo-glyph: var(--c-deep); }

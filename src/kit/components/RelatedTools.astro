@@ -1,0 +1,21 @@
+---
+/* KIT — internal linking block.
+   The reason all seven tools live on one domain: every page passes authority
+   to every other page. Rendered on every tool page, no exceptions. */
+interface Props {
+  heading?: string;
+  items: Array<{ href: string; title: string; desc: string }>;
+}
+const { heading = 'Related calculators', items } = Astro.props;
+---
+<section style="margin-top:var(--s-7)">
+  <div class="section-head"><h2>{heading}</h2></div>
+  <div class="cards">
+    {items.map((i) => (
+      <a class="card" href={i.href}>
+        <span class="card__title">{i.title}</span>
+        <span class="card__desc">{i.desc}</span>
+      </a>
+    ))}
+  </div>
+</section>

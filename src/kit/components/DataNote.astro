@@ -1,0 +1,32 @@
+---
+/* KIT — data provenance note.
+   Every programmatic page that publishes a number someone could act on says
+   where the number came from and when it was checked. This is not decoration:
+   an unsourced tax rate on 50 state pages is the fastest way to lose a
+   reader's trust and a search engine's. */
+interface Props {
+  source: string;
+  sourceUrl?: string;
+  updated?: string;
+  verified?: boolean;
+  note?: string;
+}
+const { source, sourceUrl, updated, verified = false, note } = Astro.props;
+---
+<div class={`note${verified ? '' : ' note--warn'}`}>
+  <strong class="note__title">
+    {verified ? 'Data source' : 'Unverified estimate'}
+    {!verified && <span class="badge badge--unverified" style="margin-left:8px">needs review</span>}
+  </strong>
+  {!verified && (
+    <p style="margin-bottom:var(--s-2)">
+      These figures are seeded estimates and have not been checked against the
+      primary source. Verify before launch — see <code>src/data/README.md</code>.
+    </p>
+  )}
+  <p>
+    {sourceUrl ? <a href={sourceUrl} rel="nofollow noopener" target="_blank">{source}</a> : source}
+    {updated && <> · last checked {updated}</>}
+  </p>
+  {note && <p style="margin-top:var(--s-2)">{note}</p>}
+</div>
